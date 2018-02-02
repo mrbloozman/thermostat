@@ -1,0 +1,174 @@
+extends main.jade
+
+block content
+	div.row
+		div.col-md-4
+			div.panel.panel-primary
+				div.panel-heading
+					h1.panel-title Status
+				div.panel-body
+					h1 #{system.enable_desc}
+					div.row
+						if system.fan_overide==1
+							div.col-md-4
+								img.img-thumbnail(src='/static/img/fan.png',width='100',height='100')
+							//- else
+							//- 	img.btn.btn-default.img-thumbnail(src='/static/img/fan.png',width='100',height='100')
+						for r in system.relays	
+							if r.desc=='Cool'
+								if r.status==1
+									div.col-md-4
+										img.img-thumbnail(src='/static/img/snowflake-alt-512.png',width='100',height='100')
+									//- else
+									//- 	img.btn.btn-default.img-thumbnail(src='/static/img/snowflake-alt-512.png',width='100',height='100')
+							if r.desc=='Heat'
+								if r.status==1
+									div.col-md-4
+										img.img-thumbnail(src='/static/img/flame1.png',width='100',height='100')
+									//- else
+									//- 	img.btn.btn-default.img-thumbnail(src='/static/img/flame1.png',width='100',height='100')
+				div.panel-footer
+					p Last Set: #{system.timestamp_desc}
+		div.col-md-4
+			div.panel.panel-primary
+				div.panel-heading
+					h1.panel-title Temp
+				div.panel-body
+					h1 #{system.currentTemp.temp} °F
+				div.panel-footer
+					p Last Read: #{system.currentTemp.timestamp_desc}
+		div.col-md-4
+			div.panel.panel-primary
+				div.panel-heading.clearfix
+					span#setTemp.btn.btn-lg.pull-right
+						span.glyphicon.glyphicon-cog
+					h1.panel-title Desired Temp
+				div.panel-body
+					h1.desiredTemp #{system.desiredTemp.temp} °F
+					div.desiredTemp.input-group.input-group-lg.hidden
+						input#desiredTemp.form-control(type='number',min=60,max=80,step=0.1,name='desiredTemp',placeholder=system.desiredTemp.temp)
+						span.input-group-btn
+							button#submitTemp.btn.btn-primary(type='button') Submit
+				div.panel-footer
+					p Last Set: #{system.desiredTemp.timestamp_desc}
+	div.row
+		button#enableOn.btn.btn-default Enable On
+		button#enableOff.btn.btn-default Enable Off
+		button#fanOn.btn.btn-default Fan On
+		button#fanOff.btn.btn-default Fan Off
+	//- div.panel.panel-primary
+	//- 	div.panel-heading
+	//- 		h1.panel-title Thermostat
+	//- 	div.panel-body
+	//- 		p #{system}
+	//- 		div.row
+	//- 			for r in system.relays
+	//- 				if r.desc=='Fan'
+	//- 					div.col-md-4
+	//- 						if r.status==1
+	//- 							img.btn.btn-success.img-thumbnail(src='/static/img/fan.png',width='100',height='100')
+	//- 						else
+	//- 							img.btn.btn-default.img-thumbnail(src='/static/img/fan.png',width='100',height='100')
+	//- 				if r.desc=='Cool'
+	//- 					div.col-md-4
+	//- 						if r.status==1
+	//- 							img.btn.btn-success.img-thumbnail(src='/static/img/snowflake-alt-512.png',width='100',height='100')
+	//- 						else
+	//- 							img.btn.btn-default.img-thumbnail(src='/static/img/snowflake-alt-512.png',width='100',height='100')
+	//- 				if r.desc=='Heat'
+	//- 					div.col-md-4
+	//- 						if r.status==1
+	//- 							img.btn.btn-success.img-thumbnail(src='/static/img/flame1.png',width='100',height='100')
+	//- 						else
+	//- 							img.btn.btn-default.img-thumbnail(src='/static/img/flame1.png',width='100',height='100')
+
+	//- 	ul.list-group
+	//- 		li.list-group-item Current Temp #{system.currentTemp.temp} Last Reading #{system.currentTemp.timestamp_desc}
+	//- 		li.list-group-item Desired Temp #{system.desiredTemp.temp} Last Set #{system.desiredTemp.timestamp_desc}
+	//- 		li.list-group-item Fan Overide #{system.fan_overide}
+	//- 		li.list-group-item Last System Set #{system.timestamp_desc}
+	//- 		for r in system.relays
+	//- 			li.list-group-item #{r.desc} #{r.status_desc}
+
+block scripts
+	script.
+		$(document).ready(function(){
+			$('#setTemp').click(function(){
+				$('.desiredTemp').toggleClass('hidden');
+			});
+
+			$('#submitTemp').click(function(){
+				var form = {
+					'temp':$('input#desiredTemp').val()
+				};
+				console.log(form);
+				$.ajax({
+					type: "POST",
+					url: '/setDesiredTemp',
+					data: form,
+					success: function() {
+						window.location.reload(true);
+						}
+				});
+			});
+
+			$('#enableOn').click(function(){
+				var form = {
+					'enable':1
+				};
+				console.log(form);
+				$.ajax({
+					type: "POST",
+					url: '/setSystemEnable',
+					data: form,
+					success: function() {
+						window.location.reload(true);
+						}
+				});
+			});
+
+			$('#enableOff').click(function(){
+				var form = {
+					'enable':0
+				};
+				console.log(form);
+				$.ajax({
+					type: "POST",
+					url: '/setSystemEnable',
+					data: form,
+					success: function() {
+						window.location.reload(true);
+						}
+				});
+			});
+
+			$('#fanOn').click(function(){
+				var form = {
+					'fan':1
+				};
+				console.log(form);
+				$.ajax({
+					type: "POST",
+					url: '/setSystemFan',
+					data: form,
+					success: function() {
+						window.location.reload(true);
+						}
+				});
+			});
+
+			$('#fanOff').click(function(){
+				var form = {
+					'fan':0
+				};
+				console.log(form);
+				$.ajax({
+					type: "POST",
+					url: '/setSystemFan',
+					data: form,
+					success: function() {
+						window.location.reload(true);
+						}
+				});
+			});
+		});

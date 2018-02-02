@@ -1,0 +1,155 @@
+extends main.jade
+
+block content
+	div.panel.panel-primary
+		div#heading.panel-heading
+			div.panel-title Schedules
+		div.panel-body
+			p
+				div.button-group(role='group')
+					button.expand.btn.btn-default(type="button")
+						span.glyphicon.glyphicon-chevron-down
+					button.expand.hidden.btn.btn-default(type="button")
+						span.glyphicon.glyphicon-chevron-up
+					button#delete.hidden.btn.btn-default(type="button")
+						span.glyphicon.glyphicon-remove
+			table.table.table-hover
+				tr
+					th Enabled
+					th Day
+					th Time
+					th System Enable
+					th Fan Overide
+					th Temp (F)
+					th Drift
+				tr#entry.hidden
+					td
+						div.checkbox
+							label
+								input#enable(type='checkbox',name='enable')
+					td
+						div.form-group
+							div.col-sm-offset-2.col-sm-10
+								div.radio
+									label
+										input#dayOptions0(type='radio',name='day',value=0)
+										span Monday
+								div.radio
+									label
+										input#dayOptions1(type='radio',name='day',value=1)
+										span Tuesday
+								div.radio
+									label
+										input#dayOptions2(type='radio',name='day',value=2)
+										span Wednesday
+								div.radio
+									label
+										input#dayOptions3(type='radio',name='day',value=3)
+										span Thursday
+								div.radio
+									label
+										input#dayOptions4(type='radio',name='day',value=4)
+										span Friday
+								div.radio
+									label
+										input#dayOptions5(type='radio',name='day',value=5)
+										span Saturday
+								div.radio
+									label
+										input#dayOptions6(type='radio',name='day',value=6)
+										span Sunday
+					td
+						div.form-group
+							div.col-sm-10
+								input#time.form-control(type='time',name='time')
+					td
+						div.form-group
+							div.col-sm-offset-2.col-sm-10
+								div.checkbox
+									label
+										input#system_enable(type='checkbox',name='system_enable')
+					td
+						div.form-group
+							div.col-sm-offset-2.col-sm-10
+								div.checkbox
+									label
+										input#fan_overide(type='checkbox')
+					td
+						div.form-group
+							div.col-sm-10
+								input#desiredTemp.form-control(type='number',min=60,max=80,step=0.1,name='desiredTemp')
+					td
+						div.form-group
+							div.col-sm-10
+								input#drift.form-control(type='number',min=0,max=50,step=0.1,name='drift')
+				tr#submitRow.hidden
+					td
+						button#submit.btn.btn-default Submit
+
+				each sch in schedules
+					tr.clickable-row(id=sch.id)
+						td #{sch.enable}
+						td #{sch.day}
+						td #{sch.time}
+						td #{sch.system_enable}
+						td #{sch.fan_overide}
+						td #{sch.desiredTemp}
+						td #{sch.drift}
+block scripts
+	script.
+		$(document).ready(function(){
+			$('#submit').click(function(){
+				var form = {
+					'enable':$('input#enable').prop('checked'),
+					'day':$('tr#entry').find('input[name="day"]:checked').val(),
+					'time':$('input#time').val(),
+					'system_enable':$('input#system_enable').prop('checked'),
+					'fan_overide':$('input#fan_overide').prop('checked'),
+					'desiredTemp':$('input#desiredTemp').val(),
+					'drift':$('input#drift').val()
+				};
+				console.log(form);
+				$.ajax({
+					type: "POST",
+					url: '/putSchedule',
+					data: form,
+					success: function() {
+						window.location.reload(true);
+						}
+				});
+			});
+
+			$('.expand').click(function(){
+				$('.expand').toggleClass('hidden');
+				$('tr#entry').toggleClass('hidden');
+				$('tr#submitRow').toggleClass('hidden');
+			});
+
+			$('tr.clickable-row').click(function(){
+				$(this).toggleClass('active');
+				if($('tr.clickable-row').hasClass('active')){
+					if($('#delete').hasClass('hidden')){
+						$('#delete').removeClass('hidden');
+					}
+				}else{
+					$('#delete').addClass('hidden');
+				}
+			});
+
+			$('#delete').click(function(){
+				$('tr.clickable-row.active').each(function(){
+					var form = {
+						"id":$(this).attr('id')
+					};
+					$.ajax({
+						type: "POST",
+						url: '/deleteSchedule',
+						data: form,
+						success: function() {
+							window.location.reload(true);
+							}
+					});
+				});
+			});
+		});
+
