@@ -67,14 +67,28 @@ def renderMenuScreen(data):
 	print 'renderMenuScreen(' + str(data) + ')'
 	global status
 	status['screen'] = screen.menu
-	tft.fillScreen(RA8875_RED)
-	tft.drawRect(0, 0, int(800/3), 240, RA8875_YELLOW)
-	tft.drawRect(int(800/3), 0, int(800/3), 240, RA8875_YELLOW)
-	tft.drawRect(int(2*800/3), 0, int(800/3), 240, RA8875_YELLOW)
-	tft.drawRect(0, 240, int(800/3), 239, RA8875_YELLOW)
-	tft.drawRect(int(800/3), 240, int(800/3), 239, RA8875_YELLOW)
-	tft.drawRect(int(2*800/3), 240, int(800/3), 239, RA8875_YELLOW)
-	
+
+	rows=2
+	cols=3
+	labels['Button 1','Button 2','Button 3','Button 4','Button 5','Button 6']
+
+	for r in range(rows):
+		for c in range(cols):
+			w = int(tft.width()/cols)
+			h = int(tft.height()/rows)
+			x = c*w
+			y = r*h
+			renderButton(x,y,w,h,RA8875_YELLOW,RA8875_RED,labels[(r+1)*(c+1)])
+
+def renderButton(x,y,w,h,fg_color,bg_color,label):
+	tft.graphicsMode()
+	tft.fillRect(x,y,w,h,bg_color)
+	tft.drawRect(x,y,w,h,fg_color)
+	tft.textMode()
+	tft.textColor(color,fg_color)
+	tft.textSetCursor(x+10,y+(h/2))
+	tft.textWrite(label)
+
 
 tft = Adafruit_RA8875(RA8875_CS, RA8875_RESET)
 
