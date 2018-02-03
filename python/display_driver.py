@@ -66,7 +66,7 @@ class Input:
 			self.value = False
 
 # Spinbox has a tapped event (passed between both buttons)
-class Spinbox:
+class Spinbox(Input):
 	def __init__(self,x,y,fg_color,bg_color,label,mn,mx,callback):
 		self._callback = callback
 		self._min = int(mn)
@@ -117,7 +117,7 @@ class Spinbox:
 		return False
 
 # Button has a tapped event
-class Button:
+class Button(Input):
 	def __init__(self,x,y,w,h,fg_color,bg_color,label,callback):
 		Input.__init__(self,x,y,w,h,fg_color,bg_color,label,t_datatype.boolean)
 		self._callback = callback
@@ -218,7 +218,7 @@ def handleInterrupt(channel):
 		elif status['screen'] == t_screen.menu:
 			for b in menu_screen.buttons():
 				if b.tapped(status['touchPoint']):
-					status['message'] = b.label + ' tapped'
+					status['message'] = b.label.text() + ' tapped'
 			status['screenNext'] = t_screen.main
 
 def renderMainScreen(data):
@@ -240,14 +240,14 @@ def renderMainScreen(data):
 def enable():
 	global status
 	status['enable'] = 'on'
-	menu_screen.getButtonByLabel('System On').disable()
-	menu_screen.getButtonByLabel('System Off').enable()
+	menu_screen.buttons()[0].enabled=False
+	menu_screen.buttons()[3].enabled=True
 
 def disable():
 	global status
 	status['enable'] = 'off'
-	menu_screen.getButtonByLabel('System On').enable()
-	menu_screen.getButtonByLabel('System Off').disable()
+	menu_screen.buttons()[0].enabled=True
+	menu_screen.buttons()[3].enabled=False
 
 def test():
 	print 'test'
