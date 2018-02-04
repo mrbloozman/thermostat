@@ -35,6 +35,22 @@ class Control:
 		self._fg_color = kwargs['fg_color']
 		self._bg_color = kwargs['bg_color']
 
+		if 'text' in kwargs:
+			self._text = str(kwargs['text'])
+		else:
+			self._text = ''
+
+	def text(self,t=None):
+		if t:
+			self._text = str(t)
+		return self._text
+
+	def text_width(self):
+		return 8*len(self._text)*(1+self._size)
+
+	def text_height(self):
+		return 16*(1+self._size)
+
 	def size(self,s=None):
 		if s:
 			self._size = int(s)
@@ -70,17 +86,15 @@ class Control:
 			self._bg_color = int(bg_color)
 		return self._bg_color
 
+	def tapped(self,tp):
+		return False	# default response
+
 # do I need multi-line labels?
 # required args: size, x, y, w, h, fg_color, bg_color, text
 class Label(Control):
 	def __init__(self,**kwargs):
 		Control.__init__(self,**kwargs)
 		self._text = str(kwargs['text'])
-		
-	def text(self,t=None):
-		if t:
-			self._text = str(t)
-		return self._text
 
 	def render(self):
 		tft.textMode()
@@ -142,7 +156,8 @@ class Input(Control):
 		tft.drawRect(self._x,self._y,self._w,self._h,self._fg_color)
 		tft.textMode()
 		tft.textColor(self._fg_color,bg_color)
-		tft.textSetCursor(self._x,self._y)
+		# setting for center/middle of rect
+		tft.textSetCursor(self._x+int(self._w/2)-int(self.text_width()/2),self._y+int(self._h/2)-int(self.text_height()/2))
 		tft.textEnlarge(self._size)
 		tft.textWrite(self._text,0)
 
@@ -153,34 +168,17 @@ class Input(Control):
 class Button(Input):
 	def __init__(self,**kwargs):
 		Input.__init__(self,**kwargs)
-		self._callback = kwargs['callback']
 
-		if 'text' in kwargs:
-			self._text = str(kwargs['text'])
+		if 'callback' in kwargs:
+			self._callback = kwargs['callback']
 		else:
-			self._text = ''
+			self._callback = self.skip
 
-	def text(self,t=None):
-		if t:
-			self._text = str(t)
-		return self._text
+	def skip(self,x):
+		pass
 
 	def callback(self,cb):
 		self._callback = cb
-
-	# def render(self):
-	# 	if self._enabled:
-	# 		bg_color = self._bg_color
-	# 	else:
-	# 		bg_color = RA8875_BLACK
-	# 	tft.graphicsMode()
-	# 	tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
-	# 	tft.drawRect(self._x,self._y,self._w,self._h,self._fg_color)
-	# 	tft.textMode()
-	# 	tft.textColor(self._fg_color,bg_color)
-	# 	tft.textSetCursor(self._x+10,self._y+int(self._h/2))
-	# 	tft.textEnlarge(self._size)
-	# 	tft.textWrite(self._text,0)
 
 	def tapped(self,touchPoint):
 		if not self._enabled:
@@ -303,22 +301,42 @@ class Screen:
 		else:
 			self._controls = []
 
+	def id(self):
+		return self._id
+
+	def fg_color(self,fg=None):
+		if fg:
+			self._fg_color = fg
+		return self._fg_color
+
+	def bg_color(self,bg=None):
+		if bg:
+			self._bg_color = bg
+		return self._bg_color
+
 	def controls(self):
 		return self._controls
 
-	def deactivate(self):
-		self._active = False
+	# def deactivate(self):
+	# 	self._active = False
 
-	def activate(self):
+	def active(self,x):
 		global status
-		status['screen'] = self._id
-		tft.graphicsMode()
-		tft.fillScreen(self._bg_color)
+		global screens
+		if x:
+			status['screen'] = self._id
+			for s in screens:
+				if s.id() != self._id:
+					s.active(False)
+			tft.graphicsMode()
+			tft.fillScreen(self._bg_color)
 
-		for c in self._controls:
-			c.render()
-		tft.graphicsMode()
-		self._active = True
+			for c in self._controls:
+				c.render()
+			tft.graphicsMode()
+			self._active = True
+		else:
+			self._active = False
 
 # required args: id, fg_color, bg_color, rows, cols
 class ButtonGrid(Screen):
@@ -340,8 +358,7 @@ class ButtonGrid(Screen):
 					x = c*w,
 					y = r*h,
 					fg_color = self._fg_color,
-					bg_color = self._bg_color,
-					callback = None
+					bg_color = self._bg_color
 					)
 				self.controls().append(btn)
 
@@ -350,39 +367,36 @@ class ButtonGrid(Screen):
 
 status = {
 	'screen': -1,
-	'screenNext': t_screen.main,
 	'touchPoint':{},
 	'message': 'startup',
 	'enable': 'off' # on/off
 }
+
+def getScreen(id):
+	global screens
+	for s in screens:
+		if s.id() == id:
+			return s
+	return False
 
 def handleInterrupt(channel):
 	print 'handleInterrupt(' + channel + ')'
 	global status
 	while tft.touched():
 		status['touchPoint'] = tft.touchRead()
-		if status['screen'] == t_screen.main:
-			status['screenNext'] = t_screen.menu
-		elif status['screen'] == t_screen.menu:
-			for c in menu_screen.controls():
-				if c.tapped(status['touchPoint']):
-					status['message'] = c.text() + ' tapped'
-			status['screenNext'] = t_screen.main
+		s = getScreen(status['screen'])
+		for c in s.controls():
+			if c.tapped(status['touchPoint']):
+				status['message'] = c.text() + ' tapped'
 
-# def renderMainScreen(data):
-# 	print 'renderMainScreen(' + str(data) + ')'
-# 	global status
-# 	status['screen'] = t_screen.main
-# 	tft.fillScreen(RA8875_BLUE)
-# 	# may need to monitor wait signal in textMode
-# 	tft.textMode()
-# 	tft.textEnlarge(3)
-# 	tft.textColor(RA8875_WHITE,RA8875_BLUE)
-# 	tft.textSetCursor(0,0)
-# 	tft.textWrite(status['message'],0)
-# 	tft.textSetCursor(0,100)
-# 	tft.textWrite('System: ' + status['enable'],0)
-# 	tft.graphicsMode()
+		# if status['screen'] == t_screen.main:
+		# 	status['screenNext'] = t_screen.menu
+		# elif status['screen'] == t_screen.menu:
+		# 	for c in menu_screen.controls():
+		# 		if c.tapped(status['touchPoint']):
+		# 			status['message'] = c.text() + ' tapped'
+		# 	status['screenNext'] = t_screen.main
+
 
 def test(x):
 	print 'test'
@@ -402,12 +416,23 @@ tft.touchEnable(True)
 
 GPIO.setup(RA8875_INT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+###############	main_screen ###############
 main_screen = Screen(
 		id=t_screen.main,
 		fg_color=RA8875_WHITE,
 		bg_color=RA8875_BLUE
 		)
 
+###############	menu_screen ###############
+menu_screen = ButtonGrid(
+		id=t_screen.menu,
+		rows=2,
+		cols=3,
+		fg_color=RA8875_YELLOW,
+		bg_color=RA8875_RED
+		)
+
+###############	main_screen controls ###############
 lbl = Label(
 		size=2,
 		x=50,
@@ -419,21 +444,34 @@ lbl = Label(
 		text='Testing...'
 		)
 
-main_screen.controls().append(lbl)
-
-menu_screen = ButtonGrid(
-		id=t_screen.menu,
-		rows=2,
-		cols=3,
-		fg_color=RA8875_YELLOW,
-		bg_color=RA8875_RED
+# required args: size, x, y, w, h, fg_color, bg_color, callback
+# options args: datatype, enabled, value, text
+menu_btn = Button(
+		size=1,
+		x=100,
+		y=100,
+		w=100,
+		h=75,
+		fg_color=RA8875_BLACK,
+		bg_color=RA8875_WHITE,
+		callback=menu_screen.active,
+		value=True,
+		text='MENU'
 		)
 
-menu_screen.controls()[0].text('Button 1')
-menu_screen.controls()[0].callback(test)
+main_screen.controls().append(lbl)
+main_screen.controls().append(menu_btn)
+
+###############	menu_screen controls ###############
+menu_screen.controls()[0].text('Back to Main Screen')
+menu_screen.controls()[0].callback(main_screen.active)
 menu_screen.controls()[0].value(True)
 
+####################################################
 
+screens = [main_screen,menu_screen]
+
+main_screen.active(True)
 
 while True:
 	try:
@@ -442,11 +480,11 @@ while True:
 		# print 'INTC2: ' + hex(tft.readReg(RA8875_INTC2))
 		if GPIO.input(RA8875_INT)==0:
 			handleInterrupt(RA8875_INT)
-		if status['screen'] != status['screenNext']:
-			if status['screenNext'] == t_screen.main:
-				main_screen.activate()
-			elif status['screenNext'] == t_screen.menu:
-				menu_screen.activate()
+		# if status['screen'] != status['screenNext']:
+		# 	if status['screenNext'] == t_screen.main:
+		# 		main_screen.active(True)
+		# 	elif status['screenNext'] == t_screen.menu:
+		# 		menu_screen.activate()
 
 		# sleep(1)
 

@@ -72,7 +72,7 @@ class Adafruit_RA8875(GFX):
 
 
 		x = self.readReg(0x00)
-		print hex(x)
+		# print hex(x)
 		if x != 0x75:
 			return False
 
@@ -978,11 +978,11 @@ class Adafruit_RA8875(GFX):
 ######################################################################
 
 	def writeData(self, d):
-		try:
-			print 'writeData('+hex(d)+')'
-		except TypeError as e:
-			print 'writeData('+str(d)+')'
-			print e
+		# try:
+		# 	print 'writeData('+hex(d)+')'
+		# except TypeError as e:
+		# 	print 'writeData('+str(d)+')'
+		# 	print e
 		# digitalWrite(_cs, LOW);
 		GPIO.output(self._cs, GPIO.LOW)
 		# spi_begin();
@@ -1035,7 +1035,7 @@ class Adafruit_RA8875(GFX):
 		# spi_begin();
 		self.spi.xfer2([RA8875_CMDREAD])
 		x = self.spi.readbytes(1)[0]
-		print 'readStatus(): '+str(x)
+		# print 'readStatus(): '+str(x)
 		# spi_end();
 
 		# digitalWrite(_cs, HIGH);
