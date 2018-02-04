@@ -106,8 +106,47 @@ class Control:
 			self._bg_color = int(bg_color)
 		return self._bg_color
 
-	def center(self):
-		self._x = int(tft.width()/2)-int(self._w/2)
+	def left(self,x=None):
+		if x:
+			x = int(x)
+		else:
+			x = 0
+		self._x = x
+
+	def center(self,x=None):
+		if x:
+			x = int(x)
+		else:
+			x = int(tft.width()/2)
+		self._x = x-int(self._w/2)
+
+	def right(self,x=None):
+		if x:
+			x = int(x)
+		else:
+			x = tft.width()
+		self._x = x-self._w
+
+	def top(self,y=None):
+		if y:
+			y = int(y)
+		else:
+			y = 0
+		self._y = y
+
+	def middle(self,y=None):
+		if y:
+			y = int(y)
+		else:
+			y = int(tft.height()/2)
+		self._y = y-int(self._h/2)
+
+	def bottom(self,y=None):
+		if y:
+			y = int(y)
+		else:
+			y = tft.height()
+		self._y = y-self._h
 
 	def tapped(self,tp):
 		return False	# default response
