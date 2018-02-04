@@ -110,9 +110,9 @@ class Input(Control):
 		elif self._datatype == t_datatype.text:
 			self.value = ''
 		elif self._datatype == t_datatype.number:
-			self.value = 0
+			self._value = 0
 		else:
-			self.value = False
+			self._value = False
 
 	def datatype(self):
 		return self._datatype
@@ -320,19 +320,18 @@ class Screen:
 		tft.graphicsMode()
 		self._active = True
 
-# required args: id, fg_color, bg_color, rows, cols, button_data
+# required args: id, fg_color, bg_color, rows, cols
 class ButtonGrid(Screen):
 	def __init__(self,**kwargs):
-		self._rows = rows
-		self._cols = cols
-		kwargs['controls'] = []
+		Screen.__init__(self,**kwargs)
+		self._rows = kwargs['rows']
+		self._cols = kwargs['cols']
 
 		# init buttons
 		# required args: size, x, y, w, h, fg_color, bg_color, callback
 		# options args: datatype, enabled, value
 		for r in range(self._rows):
 			for c in range(self._cols):
-				bd = self._button_data[(r*self._cols)+c]
 				w = int(tft.width()/self._cols)
 				h = int(tft.height()/self._rows)-1
 				btn = Button(size=1,
@@ -344,9 +343,9 @@ class ButtonGrid(Screen):
 					bg_color = self._bg_color,
 					callback = None
 					)
-				kwargs['controls'].append(btn)
+				self.controls().append(btn)
 
-		Screen.__init__(self,**kwargs)
+		
 
 
 status = {
@@ -430,9 +429,9 @@ menu_screen = ButtonGrid(
 		bg_color=RA8875_RED
 		)
 
-menu_screen.controls[0].text('Button 1')
-menu_screen.controls[0].callback(test)
-menu_screen.controls[0].value(True)
+menu_screen.controls()[0].text('Button 1')
+menu_screen.controls()[0].callback(test)
+menu_screen.controls()[0].value(True)
 
 
 
