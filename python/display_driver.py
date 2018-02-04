@@ -134,7 +134,7 @@ class Button(Input):
 		self._callback = kwargs['callback']
 
 		if 'text' in kwargs:
-			self._text = str(text)
+			self._text = str(kwargs['text'])
 		else:
 			self._text = ''
 
@@ -244,9 +244,11 @@ class menu:
 		for r in range(self._rows):
 			for c in range(self._cols):
 				bd = self._button_data[(r*self._cols)+c]
+				w = int(tft.width()/self._cols)
+				h = int(tft.height()/self._rows)-1
 				btn = Button(size=1,
-					w = int(tft.width()/self._cols),
-					h = int(tft.height()/self._rows)-1,
+					w = w,
+					h = h,
 					x = c*w,
 					y = r*h,
 					fg_color = self._fg_color,
@@ -300,7 +302,7 @@ def handleInterrupt(channel):
 		elif status['screen'] == t_screen.menu:
 			for b in menu_screen.buttons():
 				if b.tapped(status['touchPoint']):
-					status['message'] = b.label.text() + ' tapped'
+					status['message'] = b.text() + ' tapped'
 			status['screenNext'] = t_screen.main
 
 def renderMainScreen(data):
