@@ -29,16 +29,35 @@ class t_datatype(enum.Enum):
 # optional args: w, h
 class Control:
 	def __init__(self,**kwargs):
-		self._size = int(kwargs['size']) # text enlargement size 0-3
-		self._x = int(kwargs['x'])
-		self._y = int(kwargs['y'])
-		self._fg_color = kwargs['fg_color']
-		self._bg_color = kwargs['bg_color']
+		if 'size' in kwargs:
+			self._size = int(kwargs['size']) # text enlargement size 0-3
+		else:
+			self._size = 0
+
+		if 'fg_color' in kwargs:
+			self._fg_color = kwargs['fg_color']
+		else:
+			self._fg_color = RA8875_WHITE
+
+		if 'bg_color' in kwargs:
+			self._bg_color = kwargs['bg_color']
+		else:
+			self._bg_color = RA8875_BLACK
 
 		if 'text' in kwargs:
 			self._text = str(kwargs['text'])
 		else:
 			self._text = ''
+
+		if 'x' in kwargs:
+			self._x = int(kwargs['x'])
+		else:
+			self._x = 0
+
+		if 'y' in kwargs:
+			self._y = int(kwargs['y'])
+		else:
+			self._y = 0
 
 		if 'w' in kwargs:
 			self._w = int(kwargs['w'])
@@ -170,6 +189,44 @@ class Label(Control):
 	def __init__(self,**kwargs):
 		Control.__init__(self,**kwargs)
 
+# required args: size, fg_color, bg_color, rows, cols
+class Grid(Control):
+	def __init__(self,**kwargs):
+		Control.__init__(self,**kwargs)
+		self._rows
+		self._cols
+
+		if 'controls' in kwargs:
+			self._controls = controls
+		else:
+			self._controls = []
+
+		self.setup()
+
+	def setup(self):
+		for r in range(self._rows):
+			for c in range(self._cols):
+				i = c+(r*self._cols)
+				self._controls[i].x(self._x+int(c*self._w/self._cols))
+				self._controls[i].y(self._y+int(r*self._h/self._rows))
+				self._controls[i].w(int(self._w/self._cols))
+				self._controls[i].h(int(self._h/self._rows))
+
+	def controls(self,cs=None):
+		if cs:
+			self._controls = cs
+		return self._controls
+
+	def render(self):
+		Control.render(self)
+		for c in self._controls:
+			c.render()
+
+	def tapped(self,touchPoint):
+		for c in self_controls:
+			if c.tapped(touchPoint):
+				return True
+		return False
 	
 
 # required args: size, x, y, w, h, fg_color, bg_color
@@ -467,28 +524,28 @@ class Screen:
 			self._active = False
 
 # required args: id, fg_color, bg_color, rows, cols
-class ButtonGrid(Screen):
-	def __init__(self,**kwargs):
-		Screen.__init__(self,**kwargs)
-		self._rows = kwargs['rows']
-		self._cols = kwargs['cols']
+# class ButtonGrid(Screen):
+# 	def __init__(self,**kwargs):
+# 		Screen.__init__(self,**kwargs)
+# 		self._rows = kwargs['rows']
+# 		self._cols = kwargs['cols']
 
-		# init buttons
-		# required args: size, x, y, w, h, fg_color, bg_color, callback
-		# options args: datatype, enabled, value
-		for r in range(self._rows):
-			for c in range(self._cols):
-				w = int(tft.width()/self._cols)
-				h = int(tft.height()/self._rows)-1
-				btn = Button(size=1,
-					w = w,
-					h = h,
-					x = c*w,
-					y = r*h,
-					fg_color = self._fg_color,
-					bg_color = self._bg_color
-					)
-				self.controls().append(btn)
+# 		# init buttons
+# 		# required args: size, x, y, w, h, fg_color, bg_color, callback
+# 		# options args: datatype, enabled, value
+# 		for r in range(self._rows):
+# 			for c in range(self._cols):
+# 				w = int(tft.width()/self._cols)
+# 				h = int(tft.height()/self._rows)-1
+# 				btn = Button(size=1,
+# 					w = w,
+# 					h = h,
+# 					x = c*w,
+# 					y = r*h,
+# 					fg_color = self._fg_color,
+# 					bg_color = self._bg_color
+# 					)
+# 				self.controls().append(btn)
 
 		
 
@@ -542,10 +599,8 @@ main_screen = Screen(
 		)
 
 ###############	menu_screen ###############
-menu_screen = ButtonGrid(
+menu_screen = Screen(
 		id=t_screen.menu,
-		rows=2,
-		cols=3,
 		fg_color=RA8875_YELLOW,
 		bg_color=RA8875_RED
 		)
@@ -591,16 +646,58 @@ main_screen.controls().append(lbl)
 main_screen.controls().append(menu_btn)
 
 ###############	menu_screen controls ###############
-menu_screen.controls()[0].text('Main Screen')
-menu_screen.controls()[0].callback(main_screen.active)
-menu_screen.controls()[0].value(True)
+mainscreen_btn = Button(
+		border=5,
+		size=1,
+		fg_color=menu_screen.fg_color(),
+		bg_color=menu_screen.bg_color(),
+		value=True,
+		callback=main_screen.active,
+		text='Main Screen'
+		)
 
-menu_screen.controls()[1].text('Test Spinbox')
-menu_screen.controls()[1].callback(spin_screen.active)
-menu_screen.controls()[1].value(True)
+spinscreen_btn = Button(
+		border=5,
+		size=1,
+		fg_color=menu_screen.fg_color(),
+		bg_color=menu_screen.bg_color(),
+		value=True,
+		callback=spin_screen.active,
+		text='Spin Screen'
+		)
 
-for c in menu_screen.controls():
-	c.border(5)
+test_btn1 = Button(
+		border=5,
+		size=1,
+		fg_color=menu_screen.fg_color(),
+		bg_color=menu_screen.bg_color(),
+		text='Test 1'
+		)
+
+test_btn2 = Button(
+		border=5,
+		size=1,
+		fg_color=menu_screen.fg_color(),
+		bg_color=menu_screen.bg_color(),
+		text='Test 1'
+		)
+
+menu_grid = Grid(
+		border=5,
+		size=1,
+		w=600,
+		h=380,
+		fg_color=menu_screen.fg_color(),
+		bg_color=menu_screen.bg_color(),
+		rows=2,
+		cols=2,
+		controls=[mainscreen_btn,spinscreen_btn,test_btn1,test_btn2]
+		)
+
+menu_grid.center()
+menu_grid.middle()
+
+menu_screen.controls().append(menu_grid)
 
 ###############	spin_screen controls ###############
 # required args: size, x, y, w, h, fg_color, bg_color
@@ -643,18 +740,8 @@ main_screen.active(True)
 
 while True:
 	try:
-		# print 'INT PIN: ' + str(GPIO.input(RA8875_INT))
-		# print 'INTC1: ' + hex(tft.readReg(RA8875_INTC1))
-		# print 'INTC2: ' + hex(tft.readReg(RA8875_INTC2))
 		if GPIO.input(RA8875_INT)==0:
 			handleInterrupt(RA8875_INT)
-		# if status['screen'] != status['screenNext']:
-		# 	if status['screenNext'] == t_screen.main:
-		# 		main_screen.active(True)
-		# 	elif status['screenNext'] == t_screen.menu:
-		# 		menu_screen.activate()
-
-		# sleep(1)
 
 	except KeyboardInterrupt:
 		GPIO.cleanup()
