@@ -22,21 +22,69 @@ class t_datatype(enum.Enum):
 	boolean = 2
 	submit = 3
 
-# do I need multi-line labels?
-class Label:
-	def __init__(self,text,size):
-		self._text = str(text)
-		self._size = int(size) # text enlargement size 0-3
-		
-	def text(self,t=None):
-		if t:
-			self._text = str(t)
-		return self._text
+# common class for all controls
+# border, padding?
+class Control:
+	# required args: size, x, y, w, h, fg_color, bg_color
+	def __init__(self,**kwargs):
+		self._size = int(kwargs['size']) # text enlargement size 0-3
+		self._x = int(kwargs['x'])
+		self._y = int(kwargs['y'])
+		self._w = int(kwargs['w'])
+		self._h = int(kwargs['h'])
+		self._fg_color = kwargs['fg_color']
+		self._bg_color = kwargs['bg_color']
 
 	def size(self,s=None):
 		if s:
 			self._size = int(s)
 		return self._size
+
+	def x(self,x=None):
+		if x:
+			self._x = int(x)
+		return self._x
+
+	def y(self,y=None):
+		if y:
+			self._y = int(y)
+		return self._y
+
+	def w(self,w=None):
+		if w:
+			self._w = int(w)
+		return self._w
+
+	def h(self,h=None):
+		if h:
+			self._h = int(h)
+		return self._h
+
+	def fg_color(self,fg_color=None):
+		if fg_color:
+			self._fg_color = int(fg_color)
+		return self._fg_color
+
+	def bg_color(self,bg_color=None):
+		if bg_color:
+			self._bg_color = int(bg_color)
+		return self._bg_color
+
+# do I need multi-line labels?
+class Label(Control):
+	# required args: size, x, y, w, h, fg_color, bg_color, text
+	def __init__(self,**kwargs):
+		kwargs['w']=0
+		kwargs['h']=0
+		Control.__init__(self,**kwargs)
+		self._text = str(kwargs['text'])
+		self.w(self.width())
+		self.h(self.height())
+		
+	def text(self,t=None):
+		if t:
+			self._text = str(t)
+		return self._text
 
 	# assuming 1x cursor size is 8x16 pixels
 	def width(self):
@@ -45,25 +93,86 @@ class Label:
 	def height(self):
 		return 16*(self._size+1) # assuming single line
 
+	def render(self):
+		tft.textMode()
+		tft.textColor(self._fg_color,self._bg_color)
+		tft.textSetCursor(self._x,self._y)
+		tft.textEnlarge(self._size)
+		tft.textWrite(self._text,0)
 
-class Input:
-	def __init__(self,x,y,w,h,fg_color,bg_color,label,datatype):
-		self.x = int(x)
-		self.y = int(y)
-		self.w = int(w)
-		self.h = int(h)
-		self.fg_color = fg_color
-		self.bg_color = bg_color
-		self.label = label
-		self.enabled = True
-		self._datatype = datatype
+class Input(Control):
+	# required args: size, x, y, w, h, fg_color, bg_color
+	# options args: datatype, enabled, value
+	def __init__(self,**kwargs):
+		Control.__init__(self,**kwargs)
 
-		if self._datatype == t_datatype.text:
+		if 'datatype' in kwargs:
+			self._datatype = kwargs['datatype']
+		else:
+			self._datatype = t_datatype.boolean
+
+		if 'enabled' in kwargs:
+			self._enabled = kwargs['enabled']
+		else:
+			self._enabled = True
+
+		if 'value' in kwargs:
+			self._value = kwargs['value']
+		elif self._datatype == t_datatype.text:
 			self.value = ''
 		elif self._datatype == t_datatype.number:
 			self.value = 0
 		else:
 			self.value = False
+
+# Button has a tapped event
+class Button(Input):
+	# required args: size, x, y, w, h, fg_color, bg_color, callback
+	# options args: datatype, enabled, value, text
+	def __init__(self,**kwargs):
+		Input.__init__(self,**kwargs)
+		self._callback = kwargs['callback']
+
+		if 'text' in kwargs:
+			self._text = str(text)
+		else:
+			self._text = ''
+
+	def text(self,t=None):
+		if t:
+			self._text = str(t)
+		return self._text
+
+	def render(self):
+		if self._enabled:
+			bg_color = self._bg_color
+		else:
+			bg_color = RA8875_BLACK
+		tft.graphicsMode()
+		tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
+		tft.drawRect(self._x,self._y,self._w,self._h,self._fg_color)
+		tft.textMode()
+		tft.textColor(self._fg_color,bg_color)
+		tft.textSetCursor(self._x+10,self._y+int(self._h/2))
+		tft.textEnlarge(self._size)
+		tft.textWrite(self._text,0)
+
+	def tapped(self,touchPoint):
+		if not self._enabled:
+			return False
+		tp = touchPoint
+		nw = self._w * 1024 / tft.width()	# normalized button width
+		nh = self._h * 1024 / tft.height()	# normalized button height
+		nx = self._x * 1024 / tft.width()	# normalized button x position
+		ny = self._y * 1024 / tft.height()	# normalized button y position
+		if nx <= tp['x'] <= (nx+nw):
+			if ny <= tp['y'] <= (ny+nh):
+				self._callback(self._value)
+				return True
+			else:
+				return False
+		else:
+			return False
 
 # Spinbox has a tapped event (passed between both buttons)
 class Spinbox(Input):
@@ -116,42 +225,7 @@ class Spinbox(Input):
 			return True
 		return False
 
-# Button has a tapped event
-class Button(Input):
-	def __init__(self,x,y,w,h,fg_color,bg_color,label,callback):
-		Input.__init__(self,x,y,w,h,fg_color,bg_color,label,t_datatype.boolean)
-		self._callback = callback
 
-	def render(self):
-		if self.enabled:
-			bg_color = self.bg_color
-		else:
-			bg_color = RA8875_BLACK
-		tft.graphicsMode()
-		tft.fillRect(self.x,self.y,self.w,self.h,bg_color)
-		tft.drawRect(self.x,self.y,self.w,self.h,self.fg_color)
-		tft.textMode()
-		tft.textColor(self.fg_color,bg_color)
-		tft.textSetCursor(self.x+10,self.y+int(self.h/2))
-		tft.textEnlarge(self.label.size())
-		tft.textWrite(self.label.text(),0)
-
-	def tapped(self,touchPoint):
-		if not self.enabled:
-			return False
-		tp = touchPoint
-		nw = self.w * 1024 / tft.width()	# normalized button width
-		nh = self.h * 1024 / tft.height()	# normalized button height
-		nx = self.x * 1024 / tft.width()	# normalized button x position
-		ny = self.y * 1024 / tft.height()	# normalized button y position
-		if nx <= tp['x'] <= (nx+nw):
-			if ny <= tp['y'] <= (ny+nh):
-				self._callback()
-				return True
-			else:
-				return False
-		else:
-			return False
 
 class menu:
 	def __init__(self,menu_id,rows,cols,button_data,fg_color,bg_color):
@@ -159,28 +233,36 @@ class menu:
 		self._rows = rows
 		self._cols = cols
 		self._button_data = button_data
-		self.fg_color = fg_color
-		self.bg_color = bg_color
+		self._fg_color = fg_color
+		self._bg_color = bg_color
 		self._buttons = []
 		self._active = False
 
 		# init buttons
+		# required args: size, x, y, w, h, fg_color, bg_color, callback
+		# options args: datatype, enabled, value
 		for r in range(self._rows):
 			for c in range(self._cols):
-				w = int(tft.width()/self._cols)
-				h = int(tft.height()/self._rows)-1
-				x = c*w
-				y = r*h
 				bd = self._button_data[(r*self._cols)+c]
-				self._buttons.append(Button(x,y,w,h,self.fg_color,self.bg_color,bd['label'],bd['callback']))
+				btn = Button(size=1,
+					w = int(tft.width()/self._cols),
+					h = int(tft.height()/self._rows)-1,
+					x = c*w,
+					y = r*h,
+					fg_color = self._fg_color,
+					bg_color = self._bg_color,
+					callback = bd['callback'],
+					text = bd['label'],
+					value = bd['value'])
+				self._buttons.append(btn)
 
 	def buttons(self):
 		return self._buttons
 
-	def getButtonByLabel(self,label):
-		for b in self._buttons:
-			if b.label==label:
-				return b
+	# def getButtonByLabel(self,label):
+	# 	for b in self._buttons:
+	# 		if b.label==label:
+	# 			return b
 
 	def deactivate(self):
 		self._active = False
@@ -237,19 +319,19 @@ def renderMainScreen(data):
 	tft.graphicsMode()
 
 
-def enable():
+def enable(x):
 	global status
 	status['enable'] = 'on'
 	menu_screen.buttons()[0].enabled=False
 	menu_screen.buttons()[3].enabled=True
 
-def disable():
+def disable(x):
 	global status
 	status['enable'] = 'off'
 	menu_screen.buttons()[0].enabled=True
 	menu_screen.buttons()[3].enabled=False
 
-def test():
+def test(x):
 	print 'test'
 
 
@@ -272,23 +354,29 @@ GPIO.setup(RA8875_INT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
 menu_screen_buttons = [{
-	'label': Label('System On',1),
-	'callback':enable
+	'label': 'System On',
+	'callback':enable,
+	'value':True
 	},{
-	'label':Label('Button 2',1),
-	'callback':test
+	'label':'Button 2',
+	'callback':test,
+	'value':0
 	},{
-	'label':Label('Button 4',1),
-	'callback':test
+	'label':'Button 4',
+	'callback':test,
+	'value':0
 	},{
-	'label':Label('System Off',1),
-	'callback':disable
+	'label':'System Off',
+	'callback':disable,
+	'value':False
 	},{
-	'label':Label('Button 5',1),
-	'callback':test
+	'label':'Button 5',
+	'callback':test,
+	'value':0
 	},{
-	'label':Label('Button 6',1),
-	'callback':test
+	'label':'Button 6',
+	'callback':test,
+	'value':0
 	}]
 menu_screen = menu(t_screen.menu,2,3,menu_screen_buttons,RA8875_YELLOW,RA8875_RED)
 
