@@ -15,6 +15,7 @@ RA8875_RESET = 'XIO-P3'
 class t_screen(enum.Enum):
 	main = 0
 	menu = 1
+	spin = 2
 
 class t_datatype(enum.Enum):
 	text = 0
@@ -24,14 +25,13 @@ class t_datatype(enum.Enum):
 
 # common class for all controls
 # border, padding?
-# required args: size, x, y, w, h, fg_color, bg_color
+# required args: size, x, y, fg_color, bg_color
+# optional args: w, h
 class Control:
 	def __init__(self,**kwargs):
 		self._size = int(kwargs['size']) # text enlargement size 0-3
 		self._x = int(kwargs['x'])
 		self._y = int(kwargs['y'])
-		self._w = int(kwargs['w'])
-		self._h = int(kwargs['h'])
 		self._fg_color = kwargs['fg_color']
 		self._bg_color = kwargs['bg_color']
 
@@ -40,10 +40,30 @@ class Control:
 		else:
 			self._text = ''
 
+		if 'w' in kwargs:
+			self._w = int(kwargs['w'])
+		else:
+			self._w = self.text_width()
+
+		if 'h' in kwargs:
+			self._h = int(kwargs['h'])
+		else:
+			self._h = self.text_height()
+
+		if 'border' in kwargs:
+			self._border = int(kwargs['border'])
+		else:
+			self._border = 1
+
 	def text(self,t=None):
 		if t:
 			self._text = str(t)
 		return self._text
+
+	def border(self,b=None):
+		if b:
+			self._border = int(b)
+		return self._border
 
 	def text_width(self):
 		return 8*len(self._text)*(1+self._size)
@@ -86,22 +106,32 @@ class Control:
 			self._bg_color = int(bg_color)
 		return self._bg_color
 
+	def center(self):
+		self._x = int(tft.width()/2)-int(self._w/2)
+
 	def tapped(self,tp):
 		return False	# default response
+
+	def render(self):
+		tft.graphicsMode()
+		tft.fillRect(self._x,self._y,self._w,self._h,self._bg_color)
+		for b in range(self._border):
+			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self._fg_color)
+		tft.textMode()
+		tft.textColor(self._fg_color,self._bg_color)
+		# setting for center/middle of rect
+		tft.textSetCursor(self._x+int(self._w/2)-int(self.text_width()/2),self._y+int(self._h/2)-int(self.text_height()/2))
+		tft.textEnlarge(self._size)
+		tft.textWrite(self._text,0)
+		tft.graphicsMode()
 
 # do I need multi-line labels?
 # required args: size, x, y, w, h, fg_color, bg_color, text
 class Label(Control):
 	def __init__(self,**kwargs):
 		Control.__init__(self,**kwargs)
-		self._text = str(kwargs['text'])
 
-	def render(self):
-		tft.textMode()
-		tft.textColor(self._fg_color,self._bg_color)
-		tft.textSetCursor(self._x,self._y)
-		tft.textEnlarge(self._size)
-		tft.textWrite(self._text,0)
+	
 
 # required args: size, x, y, w, h, fg_color, bg_color
 # options args: datatype, enabled, value
@@ -144,7 +174,15 @@ class Input(Control):
 				self._value = int(val)
 			else:
 				self._value = val
+		elif val==0:
+			self._value = val
 		return self._value
+
+	def value_width(self):
+		return 8*len(str(self._value))*(1+self._size)
+
+	def value_height(self):
+		return 16*(1+self._size)
 
 	def render(self):
 		if self._enabled:
@@ -153,18 +191,20 @@ class Input(Control):
 			bg_color = RA8875_BLACK
 		tft.graphicsMode()
 		tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
-		tft.drawRect(self._x,self._y,self._w,self._h,self._fg_color)
+		for b in range(self._border):
+			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self._fg_color)
 		tft.textMode()
 		tft.textColor(self._fg_color,bg_color)
 		# setting for center/middle of rect
-		tft.textSetCursor(self._x+int(self._w/2)-int(self.text_width()/2),self._y+int(self._h/2)-int(self.text_height()/2))
+		tft.textSetCursor(self._x+int(self._w/2)-int(self.value_width()/2),self._y+int(self._h/2)-int(self.value_height()/2))
 		tft.textEnlarge(self._size)
-		tft.textWrite(self._text,0)
+		tft.textWrite(str(self._value),0)
+		tft.graphicsMode()
 
 
 # Button has a tapped event
-# required args: size, x, y, w, h, fg_color, bg_color, callback
-# options args: datatype, enabled, value, text
+# required args: size, x, y, w, h, fg_color, bg_color
+# options args: datatype, enabled, value, text, callback
 class Button(Input):
 	def __init__(self,**kwargs):
 		Input.__init__(self,**kwargs)
@@ -197,35 +237,54 @@ class Button(Input):
 		else:
 			return False
 
+	def render(self):
+		Control.render(self)
+
 # Spinbox is made up of a Label, an Input, and two Buttons
 # Spinbox has a tapped event (passed between both buttons)
-# required args: size, x, y, w, h, fg_color, bg_color, callback
-# options args: datatype, enabled, value, text, mn, mx
+# required args: size, x, y, w, h, fg_color, bg_color
+# options args: datatype, enabled, value, text, mn, mx, callback
 class Spinbox(Input):
 	def __init__(self,**kwargs):
-		self._callback = callback
-		self._min = int(kwargs['mn'])
-		self._max = int(kwargs['mx'])
 		kwargs['datatype'] = t_datatype.number # spinbox must be number type
 		Input.__init__(self,**kwargs)
 
+		if 'mn' in kwargs:
+			self._mn = int(kwargs['mn'])
+		else:
+			self._mn = -99
+
+		if 'mx' in kwargs:
+			self._mx = int(kwargs['mx'])
+		else: 
+			self._mx = 100
+
+		if 'callback' in kwargs:
+			self._callback = kwargs['callback']
+		else:
+			self._callback = self.skip
+
 		self._label = Label(
+			border=0,
 			size=self._size,
-			x=self._x,
-			y=self._y,
-			w=int(len(self._text)*8*(self._size+1)),
-			h=int(16*(self._size+1)),
+			x=0,
+			y=0,
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
 			text=self._text
 			)
 
+		if len(str(self._mn)) > len(str(self._mx)):
+			maxlen = len(str(self._mn))+1
+		else:
+			maxlen = len(str(self._mx))+1
+
 		self._input = Input(
+			border=0,
 			size=self._size,
-			x=self._x+self._label.w(),
-			y=self._y,
-			w=int(len(self._value)*8*(self._size+1)),
-			h=int(16*(self._size+1)),
+			x=0,
+			y=0,
+			w=8*maxlen*(self._size+1),
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
 			datatype=self._datatype,
@@ -233,32 +292,63 @@ class Spinbox(Input):
 			)
 
 		self._upBtn = Button(
+			border=0,
 			size=self._size,
-			w=8*(self._size+1),
-			h=8*(self._size+1),
-			x=self._input.x()+self._input.w(),
-			y=self._y+(8*(self._size+1)),
+			x=0,
+			y=0,
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
 			callback=self.change,
-			value=1
+			value=1,
+			text=chr(0x1e)
 			)
 
 		self._dnBtn = Button(
+			border=0,
 			size=self._size,
-			w=8*(self._size+1),
-			h=8*(self._size+1),
-			x=self._input.x()+self._input.w(),
-			y=self._y,
+			x=0,
+			y=0,
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
 			callback=self.change,
-			value=-1
+			value=-1,
+			text=chr(0x1f)
 			)
+
+		self.position()
+
+		if 'w' not in kwargs:
+			self._w = self._label.w()+self._input.w()+self._upBtn.w()
+
+		if 'h' not in kwargs:
+			self._h = self._upBtn.h()+self._dnBtn.h()
+
+	def center(self):
+		Input.center(self)
+		self.position()
+
+	def position(self):
+		self._label.x(self._x+int(self._w/2)-self._label.w())
+		self._label.y(self._y+int(self._h/2)-int(self._label.h()/2))
+		self._input.x(self._x+int(self._w/2))
+		self._input.y(self._y+int(self._h/2)-int(self._input.h()/2))
+		self._upBtn.x(self._input.x()+self._input.w())
+		self._upBtn.y(self._input.y()-int(self._upBtn.h()/2))
+		self._dnBtn.x(self._input.x()+self._input.w())
+		self._dnBtn.y(self._input.y()+int(self._upBtn.h()/2))
+
+	def skip(self,x):
+		pass
+
+	def callback(self,cb):
+		self._callback = cb
 		
 	def change(self,n):
+		# print 'change('+str(n)+')'
 		if self._mn <= self._value+n <= self._mx:
 			self._value = self._value+n
+			self._input.value(self._value)
+			self._input.render()
 
 	def render(self):
 		if self.enabled:
@@ -280,9 +370,12 @@ class Spinbox(Input):
 		self._dnBtn.render()
 
 	def tapped(self,touchPoint):
+		# print 'spinbox tapped()'
 		if self._upBtn.tapped(touchPoint):
+			self._callback(self._value)
 			return True
 		elif self._dnBtn.tapped(touchPoint):
+			self._callback(self._value)
 			return True
 		return False
 
@@ -317,17 +410,13 @@ class Screen:
 	def controls(self):
 		return self._controls
 
-	# def deactivate(self):
-	# 	self._active = False
-
-	def active(self,x):
+	def active(self,x=None):
 		global status
 		global screens
 		if x:
 			status['screen'] = self._id
 			for s in screens:
-				if s.id() != self._id:
-					s.active(False)
+				s.active(False)
 			tft.graphicsMode()
 			tft.fillScreen(self._bg_color)
 
@@ -380,26 +469,16 @@ def getScreen(id):
 	return False
 
 def handleInterrupt(channel):
-	print 'handleInterrupt(' + channel + ')'
+	# print 'handleInterrupt(' + channel + ')'
 	global status
 	while tft.touched():
 		status['touchPoint'] = tft.touchRead()
-		s = getScreen(status['screen'])
-		for c in s.controls():
-			if c.tapped(status['touchPoint']):
-				status['message'] = c.text() + ' tapped'
+	s = getScreen(status['screen'])
+	for c in s.controls():
+		if c.tapped(status['touchPoint']):
+			status['message'] = c.text() + ' tapped'
+			# print status['message']
 
-		# if status['screen'] == t_screen.main:
-		# 	status['screenNext'] = t_screen.menu
-		# elif status['screen'] == t_screen.menu:
-		# 	for c in menu_screen.controls():
-		# 		if c.tapped(status['touchPoint']):
-		# 			status['message'] = c.text() + ' tapped'
-		# 	status['screenNext'] = t_screen.main
-
-
-def test(x):
-	print 'test'
 
 
 tft = Adafruit_RA8875(RA8875_CS, RA8875_RESET)
@@ -432,6 +511,13 @@ menu_screen = ButtonGrid(
 		bg_color=RA8875_RED
 		)
 
+###############	spin_screen ###############
+spin_screen = Screen(
+		id=t_screen.spin,
+		fg_color=RA8875_YELLOW,
+		bg_color=RA8875_BLACK
+		)
+
 ###############	main_screen controls ###############
 lbl = Label(
 		size=2,
@@ -441,15 +527,16 @@ lbl = Label(
 		h=120,
 		fg_color=RA8875_WHITE,
 		bg_color=RA8875_MAGENTA,
-		text='Testing...'
+		text=status['message']
 		)
+lbl.center()
 
-# required args: size, x, y, w, h, fg_color, bg_color, callback
-# options args: datatype, enabled, value, text
+# required args: size, x, y, w, h, fg_color, bg_color
+# options args: datatype, enabled, value, text, callback
 menu_btn = Button(
 		size=1,
-		x=100,
-		y=100,
+		x=0,
+		y=0,
 		w=100,
 		h=75,
 		fg_color=RA8875_BLACK,
@@ -458,18 +545,60 @@ menu_btn = Button(
 		value=True,
 		text='MENU'
 		)
+menu_btn.center()
+menu_btn.border(10)
 
 main_screen.controls().append(lbl)
 main_screen.controls().append(menu_btn)
 
 ###############	menu_screen controls ###############
-menu_screen.controls()[0].text('Back to Main Screen')
+menu_screen.controls()[0].text('Main Screen')
 menu_screen.controls()[0].callback(main_screen.active)
 menu_screen.controls()[0].value(True)
 
+menu_screen.controls()[1].text('Test Spinbox')
+menu_screen.controls()[1].callback(spin_screen.active)
+menu_screen.controls()[1].value(True)
+
+for c in menu_screen.controls():
+	c.border(5)
+
+###############	spin_screen controls ###############
+# required args: size, x, y, w, h, fg_color, bg_color
+# options args: datatype, enabled, value, text, mn, mx, callback
+sbox = Spinbox(
+		size=3,
+		x=0,
+		y=0,
+		w=500,
+		h=250,
+		fg_color=spin_screen.fg_color(),
+		bg_color=spin_screen.bg_color(),
+		value=10,
+		text='Spin: ',
+		mn=0,
+		mx=20
+	)
+sbox.center()
+
+submit_btn = Button(
+		size=2,
+		x=0,
+		y=300,
+		fg_color=RA8875_BLACK,
+		bg_color=RA8875_YELLOW,
+		callback=main_screen.active,
+		value=True,
+		text='SUBMIT'
+		)
+submit_btn.center()
+
+spin_screen.controls().append(sbox)
+spin_screen.controls().append(submit_btn)
+
 ####################################################
 
-screens = [main_screen,menu_screen]
+screens = [main_screen,menu_screen,spin_screen]
 
 main_screen.active(True)
 
