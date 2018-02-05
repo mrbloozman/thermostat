@@ -193,17 +193,17 @@ class Label(Control):
 class Grid(Control):
 	def __init__(self,**kwargs):
 		Control.__init__(self,**kwargs)
-		self._rows
-		self._cols
+		self._rows=int(kwargs['rows'])
+		self._cols=int(kwargs['cols'])
 
 		if 'controls' in kwargs:
-			self._controls = controls
+			self._controls = kwargs['controls']
 		else:
 			self._controls = []
 
-		self.setup()
+		self.position()
 
-	def setup(self):
+	def position(self):
 		for r in range(self._rows):
 			for c in range(self._cols):
 				i = c+(r*self._cols)
@@ -211,6 +211,30 @@ class Grid(Control):
 				self._controls[i].y(self._y+int(r*self._h/self._rows))
 				self._controls[i].w(int(self._w/self._cols))
 				self._controls[i].h(int(self._h/self._rows))
+
+	def left(self,x=None):
+		Control.left(self,x)
+		self.position()
+
+	def center(self,x=None):
+		Control.center(self,x)
+		self.position()
+
+	def right(self,x=None):
+		Control.right(self,x)
+		self.position()
+
+	def top(self,y=None):
+		Control.top(self,y)
+		self.position()
+
+	def middle(self,y=None):
+		Control.middle(self,y)
+		self.position()
+
+	def bottom(self,y=None):
+		Control.bottom(self,y)
+		self.position()
 
 	def controls(self,cs=None):
 		if cs:
@@ -223,7 +247,7 @@ class Grid(Control):
 			c.render()
 
 	def tapped(self,touchPoint):
-		for c in self_controls:
+		for c in self._controls:
 			if c.tapped(touchPoint):
 				return True
 		return False
@@ -419,10 +443,6 @@ class Spinbox(Input):
 		if 'h' not in kwargs:
 			self._h = self._upBtn.h()+self._dnBtn.h()
 
-	def center(self):
-		Input.center(self)
-		self.position()
-
 	def position(self):
 		self._label.x(self._x+int(self._w/2)-self._label.w())
 		self._label.y(self._y+int(self._h/2)-int(self._label.h()/2))
@@ -432,6 +452,30 @@ class Spinbox(Input):
 		self._upBtn.y(self._input.y()-int(self._upBtn.h()/2))
 		self._dnBtn.x(self._input.x()+self._input.w())
 		self._dnBtn.y(self._input.y()+int(self._upBtn.h()/2))
+
+	def left(self,x=None):
+		Input.left(self,x)
+		self.position()
+
+	def center(self,x=None):
+		Input.center(self,x)
+		self.position()
+
+	def right(self,x=None):
+		Input.right(self,x)
+		self.position()
+
+	def top(self,y=None):
+		Input.top(self,y)
+		self.position()
+
+	def middle(self,y=None):
+		Input.middle(self,y)
+		self.position()
+
+	def bottom(self,y=None):
+		Input.bottom(self,y)
+		self.position()
 
 	def skip(self,x):
 		pass
@@ -523,29 +567,7 @@ class Screen:
 		else:
 			self._active = False
 
-# required args: id, fg_color, bg_color, rows, cols
-# class ButtonGrid(Screen):
-# 	def __init__(self,**kwargs):
-# 		Screen.__init__(self,**kwargs)
-# 		self._rows = kwargs['rows']
-# 		self._cols = kwargs['cols']
 
-# 		# init buttons
-# 		# required args: size, x, y, w, h, fg_color, bg_color, callback
-# 		# options args: datatype, enabled, value
-# 		for r in range(self._rows):
-# 			for c in range(self._cols):
-# 				w = int(tft.width()/self._cols)
-# 				h = int(tft.height()/self._rows)-1
-# 				btn = Button(size=1,
-# 					w = w,
-# 					h = h,
-# 					x = c*w,
-# 					y = r*h,
-# 					fg_color = self._fg_color,
-# 					bg_color = self._bg_color
-# 					)
-# 				self.controls().append(btn)
 
 		
 
@@ -704,8 +726,6 @@ menu_screen.controls().append(menu_grid)
 # options args: datatype, enabled, value, text, mn, mx, callback
 sbox = Spinbox(
 		size=3,
-		x=0,
-		y=0,
 		w=500,
 		h=250,
 		fg_color=spin_screen.fg_color(),
@@ -716,11 +736,10 @@ sbox = Spinbox(
 		mx=20
 	)
 sbox.center()
+sbox.middle()
 
 submit_btn = Button(
 		size=2,
-		x=0,
-		y=300,
 		fg_color=RA8875_BLACK,
 		bg_color=RA8875_YELLOW,
 		callback=main_screen.active,
@@ -728,6 +747,7 @@ submit_btn = Button(
 		text='SUBMIT'
 		)
 submit_btn.center()
+submit_btn.bottom(400)
 
 spin_screen.controls().append(sbox)
 spin_screen.controls().append(submit_btn)
