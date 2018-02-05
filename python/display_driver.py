@@ -373,18 +373,19 @@ class Button(Input):
 
 class Toggle(Button):
 	def __init__(self,**kwargs):
-		Button.__init__(self,**kwargs):
+		Button.__init__(self,**kwargs)
 
 		if 'selected' in kwargs:
 			self._selected = bool(selected)
 		else:
 			self._selected = False
 
-	def select(self):
-		self._selected = True
-
-	def deselect(self):
-		self._selected = False
+	def selected(self,s=None):
+		if s:
+			self._selected = bool(s)
+		elif s==False:
+			self._selected = s
+		return self._selected
 
 	def fg_color(self,fg_color=None):
 		if fg_color:
@@ -401,6 +402,11 @@ class Toggle(Button):
 			return self._bg_color
 		else:
 			return self._fg_color
+
+	def tapped(self,touchPoint):
+		if Button.tapped(self,touchPoint):
+			self._selected = ~self._selected
+			self.render()
 
 
 
@@ -593,7 +599,9 @@ class Screen:
 			self._bg_color = bg
 		return self._bg_color
 
-	def controls(self):
+	def controls(self,controls=None):
+		if controls:
+			self._controls=controls
 		return self._controls
 
 	def active(self,x=None):
@@ -873,7 +881,7 @@ toggle_screen.controls([display_input,tgrid])
 
 ####################################################
 
-screens = [main_screen,menu_screen,spin_screen]
+screens = [main_screen,menu_screen,spin_screen,toggle_screen]
 
 main_screen.active(True)
 
