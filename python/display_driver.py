@@ -16,6 +16,7 @@ class t_screen(enum.Enum):
 	main = 0
 	menu = 1
 	spin = 2
+	toggle = 3
 
 class t_datatype(enum.Enum):
 	text = 0
@@ -172,11 +173,11 @@ class Control:
 
 	def render(self):
 		tft.graphicsMode()
-		tft.fillRect(self._x,self._y,self._w,self._h,self._bg_color)
+		tft.fillRect(self._x,self._y,self._w,self._h,self.bg_color())
 		for b in range(self._border):
-			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self._fg_color)
+			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
 		tft.textMode()
-		tft.textColor(self._fg_color,self._bg_color)
+		tft.textColor(self.fg_color(),self.bg_color())
 		# setting for center/middle of rect
 		tft.textSetCursor(self._x+int(self._w/2)-int(self.text_width()/2),self._y+int(self._h/2)-int(self.text_height()/2))
 		tft.textEnlarge(self._size)
@@ -304,6 +305,16 @@ class Input(Control):
 	def value_height(self):
 		return 16*(1+self._size)
 
+	def change(self,val):
+		if self._value != val:
+			if self._datatype == t_datatype.text:
+				self._value = str(val)
+			elif self._datatype == t_datatype.number:
+				self._value = int(val)
+			else:
+				self._value = val
+			self.render()
+
 	def render(self):
 		if self._enabled:
 			bg_color = self._bg_color
@@ -359,6 +370,41 @@ class Button(Input):
 
 	def render(self):
 		Control.render(self)
+
+class Toggle(Button):
+	def __init__(self,**kwargs):
+		Button.__init__(self,**kwargs):
+
+		if 'selected' in kwargs:
+			self._selected = bool(selected)
+		else:
+			self._selected = False
+
+	def select(self):
+		self._selected = True
+
+	def deselect(self):
+		self._selected = False
+
+	def fg_color(self,fg_color=None):
+		if fg_color:
+			self._fg_color = int(fg_color)
+		if self._selected:
+			return self._fg_color
+		else:
+			return self._bg_color
+
+	def bg_color(self,bg_color=None):
+		if bg_color:
+			self._bg_color = int(bg_color)
+		if self._selected:
+			return self._bg_color
+		else:
+			return self._fg_color
+
+
+
+
 
 # Spinbox is made up of a Label, an Input, and two Buttons
 # Spinbox has a tapped event (passed between both buttons)
@@ -634,6 +680,13 @@ spin_screen = Screen(
 		bg_color=RA8875_BLACK
 		)
 
+###############	toggle_screen ###############
+toggle_screen = Screen(
+		id=t_screen.toggle,
+		fg_color=RA8875_WHITE,
+		bg_color=RA8875_BLUE
+		)
+
 ###############	main_screen controls ###############
 lbl = Label(
 		size=2,
@@ -685,7 +738,7 @@ spinscreen_btn = Button(
 		bg_color=menu_screen.bg_color(),
 		value=True,
 		callback=spin_screen.active,
-		text='Spin Screen'
+		text='Spinbox Test'
 		)
 
 test_btn1 = Button(
@@ -693,7 +746,9 @@ test_btn1 = Button(
 		size=1,
 		fg_color=menu_screen.fg_color(),
 		bg_color=menu_screen.bg_color(),
-		text='Test 1'
+		text='Toggle Test',
+		callback=toggle_screen.active,
+		value=True
 		)
 
 test_btn2 = Button(
@@ -751,6 +806,70 @@ submit_btn.bottom(400)
 
 spin_screen.controls().append(sbox)
 spin_screen.controls().append(submit_btn)
+
+###############	toggle_screen controls ###############
+fg = toggle_screen.fg_color()
+bg = toggle_screen.bg_color()
+
+display_input = Input(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		datatype=t_datatype.text,
+		value='Tap...'
+		)
+
+t1 = Toggle(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Toggle 1',
+		datatype=t_datatype.text,
+		value='Got 1!',
+		callback=display_input.change
+		)
+
+t2 = Toggle(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Toggle 2',
+		datatype=t_datatype.text,
+		value='Got 2!',
+		callback=display_input.change
+		)
+
+t3 = Toggle(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Toggle 3',
+		datatype=t_datatype.text,
+		value='Got 3!',
+		callback=display_input.change
+		)
+
+display_input.center()
+display_input.top()
+
+tgrid = Grid(
+		fg_color=fg,
+		bg_color=bg,
+		rows=1,
+		cols=3,
+		controls=[t1,t2,t3],
+		w=700,
+		h=300
+		)
+
+tgrid.center()
+tgrid.middle()
+
+toggle_screen.controls([display_input,tgrid])
+
+
+
+
 
 ####################################################
 
