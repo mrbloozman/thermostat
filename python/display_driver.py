@@ -17,6 +17,7 @@ class t_screen(enum.Enum):
 	menu = 1
 	spin = 2
 	toggle = 3
+	listbx = 4
 
 class t_datatype(enum.Enum):
 	text = 0
@@ -571,6 +572,30 @@ class Spinbox(Input):
 			return True
 		return False
 
+# Listbox is a container for Toggle instances - toggles callbacks will be overwritten to control the listbox value
+class Listbox(Grid,Input):
+	def __init__(self,**kwargs):
+		kwargs['cols']=1
+		if 'controls' in kwargs:
+			kwargs['rows']=len(kwargs['controls'])
+		else:
+			kwargs['rows']=0
+
+		Grid.__init__(self,**kwargs)
+		Input.__init__(self,**kwargs)
+
+		for t in self._controls:
+			t.callback(self.change)
+		self.change(self._value)
+
+	def change(self,val):
+		for t in self._controls:
+			if val == t.value():
+				t.selected(True)
+			else:
+				t.selected(False)
+
+
 # Common class for screens
 # required args: id, fg_color, bg_color
 # optional args: controls
@@ -667,33 +692,38 @@ tft.touchEnable(True)
 
 GPIO.setup(RA8875_INT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-###############	main_screen ###############
+###############	screens ###############
 main_screen = Screen(
 		id=t_screen.main,
 		fg_color=RA8875_WHITE,
 		bg_color=RA8875_BLUE
 		)
 
-###############	menu_screen ###############
 menu_screen = Screen(
 		id=t_screen.menu,
 		fg_color=RA8875_YELLOW,
 		bg_color=RA8875_RED
 		)
 
-###############	spin_screen ###############
 spin_screen = Screen(
 		id=t_screen.spin,
 		fg_color=RA8875_YELLOW,
 		bg_color=RA8875_BLACK
 		)
 
-###############	toggle_screen ###############
 toggle_screen = Screen(
 		id=t_screen.toggle,
 		fg_color=RA8875_WHITE,
 		bg_color=RA8875_BLUE
 		)
+
+listbox_screen = Screen(
+		id=t_screen.listbx,
+		fg_color=RA8875_WHITE,
+		bg_color=RA8875_RED
+		)
+
+screens = [main_screen,menu_screen,spin_screen,toggle_screen,listbox_screen]
 
 ###############	main_screen controls ###############
 lbl = Label(
@@ -875,13 +905,81 @@ tgrid.middle()
 
 toggle_screen.controls([display_input,tgrid])
 
+###############	listbx_screen controls ###############
+fg = toggle_screen.fg_color()
+bg = toggle_screen.bg_color()
+
+lbl= Label(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Select...'
+		)
+
+t1 = Toggle(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Item 1',
+		datatype=t_datatype.text,
+		value='Got 1!'
+		)
+
+t2 = Toggle(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Item 2',
+		datatype=t_datatype.text,
+		value='Got 2!'
+		)
+
+t3 = Toggle(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Item 3',
+		datatype=t_datatype.text,
+		value='Got 3!',
+		)
+
+lbl.center(150)
+lbl.middle()
+
+lbox = Listbox(
+		fg_color=fg,
+		bg_color=bg,
+		controls=[t1,t2,t3],
+		w=500,
+		h=400
+		)
+
+lbox.center(550)
+lbox.middle()
+
+btn = Button(
+		border=2,
+		size=3,
+		w=25,
+		h=25,
+		fg_color=fg,
+		bg_color=bg,
+		text='OK',
+		callback=main_screen.active
+		value=True
+		)
+
+btn.center(150)
+btn.middle(350)
+
+listbox_screen.controls([lbl,lbox])
 
 
 
 
 ####################################################
 
-screens = [main_screen,menu_screen,spin_screen,toggle_screen]
+
 
 main_screen.active(True)
 
