@@ -386,6 +386,7 @@ class Toggle(Button):
 			self._selected = bool(s)
 		elif s==False:
 			self._selected = s
+		self.render()
 		return self._selected
 
 	def fg_color(self,fg_color=None):
@@ -741,11 +742,10 @@ lbl.center()
 # required args: size, x, y, w, h, fg_color, bg_color
 # options args: datatype, enabled, value, text, callback
 menu_btn = Button(
-		size=1,
-		x=0,
-		y=0,
-		w=100,
-		h=75,
+		size=3,
+		w=200,
+		h=150,
+		y=20,
 		fg_color=RA8875_BLACK,
 		bg_color=RA8875_WHITE,
 		callback=menu_screen.active,
@@ -753,7 +753,7 @@ menu_btn = Button(
 		text='MENU'
 		)
 menu_btn.center()
-menu_btn.border(10)
+menu_btn.border(7)
 
 main_screen.controls().append(lbl)
 main_screen.controls().append(menu_btn)
@@ -794,23 +794,104 @@ test_btn2 = Button(
 		size=1,
 		fg_color=menu_screen.fg_color(),
 		bg_color=menu_screen.bg_color(),
-		text='Test 1'
+		text='Listbox Test',
+		callback=listbox_screen.active,
+		value=True
 		)
+
+lbl0 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl0'
+	)
+
+lbl1 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl1'
+	)
+
+lbl2 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl2'
+	)
+
+lbl3 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl3'
+	)
+
+lbl4 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl4'
+	)
+
+lbl5 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl5'
+	)
+
+lbl6 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl6'
+	)
+
+lbl7 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl7'
+	)
+
+lbl8 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl8'
+	)
+
+lbl9 = Label(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLUE,
+		text='lbl9'
+	)
+
+mini_grid = Grid(
+		border=5,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_MAGENTA,
+		rows=3,
+		cols=3,
+		controls=[lbl1,lbl2,lbl3,lbl4,lbl5,lbl6,lbl7,lbl8,lbl9])
 
 menu_grid = Grid(
 		border=5,
 		size=1,
-		w=600,
-		h=380,
+		w=750,
+		h=420,
 		fg_color=menu_screen.fg_color(),
 		bg_color=menu_screen.bg_color(),
 		rows=2,
-		cols=2,
-		controls=[mainscreen_btn,spinscreen_btn,test_btn1,test_btn2]
+		cols=3,
+		controls=[mainscreen_btn,spinscreen_btn,test_btn1,test_btn2,lbl0,mini_grid]
 		)
 
 menu_grid.center()
 menu_grid.middle()
+mini_grid.position()
 
 menu_screen.controls().append(menu_grid)
 
@@ -903,13 +984,27 @@ tgrid = Grid(
 tgrid.center()
 tgrid.middle()
 
-toggle_screen.controls([display_input,tgrid])
+btn = Button(
+		border=5,
+		size=3,
+		fg_color=bg,
+		bg_color=fg,
+		text='EXIT',
+		callback=main_screen.active,
+		value=True
+		)
+
+btn.top(50)
+btn.right()
+
+toggle_screen.controls([display_input,tgrid,btn])
 
 ###############	listbx_screen controls ###############
-fg = toggle_screen.fg_color()
-bg = toggle_screen.bg_color()
+fg = listbox_screen.fg_color()
+bg = listbox_screen.bg_color()
 
 lbl= Label(
+		border=0,
 		size=2,
 		fg_color=fg,
 		bg_color=bg,
@@ -918,7 +1013,7 @@ lbl= Label(
 
 t1 = Toggle(
 		size=2,
-		fg_color=fg,
+		fg_color=RA8875_YELLOW,
 		bg_color=bg,
 		text='Item 1',
 		datatype=t_datatype.text,
@@ -927,7 +1022,7 @@ t1 = Toggle(
 
 t2 = Toggle(
 		size=2,
-		fg_color=fg,
+		fg_color=RA8875_YELLOW,
 		bg_color=bg,
 		text='Item 2',
 		datatype=t_datatype.text,
@@ -936,7 +1031,7 @@ t2 = Toggle(
 
 t3 = Toggle(
 		size=2,
-		fg_color=fg,
+		fg_color=RA8875_YELLOW,
 		bg_color=bg,
 		text='Item 3',
 		datatype=t_datatype.text,
@@ -950,8 +1045,8 @@ lbox = Listbox(
 		fg_color=fg,
 		bg_color=bg,
 		controls=[t1,t2,t3],
-		w=500,
-		h=400
+		w=400,
+		h=350
 		)
 
 lbox.center(550)
@@ -960,19 +1055,19 @@ lbox.middle()
 btn = Button(
 		border=2,
 		size=3,
-		w=25,
-		h=25,
+		w=50,
+		h=50,
 		fg_color=fg,
 		bg_color=bg,
 		text='OK',
-		callback=main_screen.active
+		callback=main_screen.active,
 		value=True
 		)
 
 btn.center(150)
 btn.middle(350)
 
-listbox_screen.controls([lbl,lbox])
+listbox_screen.controls([lbl,lbox,btn])
 
 
 
