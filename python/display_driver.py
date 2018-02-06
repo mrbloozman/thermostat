@@ -26,9 +26,7 @@ class t_datatype(enum.Enum):
 	submit = 3
 
 # common class for all controls
-# border, padding?
-# required args: size, x, y, fg_color, bg_color
-# optional args: w, h
+# padding?
 class Control:
 	def __init__(self,**kwargs):
 		if 'onTap' in kwargs:
@@ -192,6 +190,15 @@ class Control:
 			y = tft.height()
 		self._y = y-self._h
 
+	def listArgs(self,*args):
+		arglist = []
+		for a in args:
+			try:
+				arglist.append(getattr(self,a))
+			except:
+				arglist.append(a)
+		return arglist
+
 	def tapped(self,touchPoint):
 		tp = touchPoint
 		nw = self._w * 1024 / tft.width()	# normalized width
@@ -200,7 +207,7 @@ class Control:
 		ny = self._y * 1024 / tft.height()	# normalized y position
 		if nx <= tp['x'] <= (nx+nw):
 			if ny <= tp['y'] <= (ny+nh):
-				self._onTap(*self._onTapArgs)
+				self._onTap(*self.listArgs(self._onTapArgs))
 				return True
 			else:
 				return False
@@ -219,16 +226,14 @@ class Control:
 		tft.textEnlarge(self._size)
 		tft.textWrite(self._text,0)
 		tft.graphicsMode()
-		self._onRender(*self._onRenderArgs)
+		self._onRender(*self.listArgs(self._onRenderArgs))
 
 
 # do I need multi-line labels?
-# required args: size, x, y, w, h, fg_color, bg_color, text
 class Label(Control):
 	def __init__(self,**kwargs):
 		Control.__init__(self,**kwargs)
 
-# required args: size, fg_color, bg_color, rows, cols
 class Grid(Control):
 	def __init__(self,**kwargs):
 		Control.__init__(self,**kwargs)
@@ -293,9 +298,6 @@ class Grid(Control):
 		else:
 			return False
 	
-
-# required args: size, x, y, w, h, fg_color, bg_color
-# options args: datatype, enabled, value
 class Input(Control):
 	def __init__(self,**kwargs):
 		Control.__init__(self,**kwargs)
@@ -335,6 +337,7 @@ class Input(Control):
 	def enabled(self,en=None):
 		if en:
 			self._enabled = en
+			self.render()
 		return self._enabled
 
 	def value(self,val=None):
@@ -359,7 +362,7 @@ class Input(Control):
 		if self._value != val:
 			self.value(val)
 			self.render()
-			self._onChange(*self._onChangeArgs)
+			self._onChange(*self.listArgs(self._onChangeArgs))
 
 	def tapped(self,touchPoint):
 		if not self._enabled:
@@ -385,35 +388,11 @@ class Input(Control):
 		tft.graphicsMode()
 		self._onRender(*self._onRenderArgs)
 
-
-# Button has a tapped event
-# required args: size, x, y, w, h, fg_color, bg_color
-# options args: datatype, enabled, value, text, callback
 class Button(Input):
 	def __init__(self,**kwargs):
 		Input.__init__(self,**kwargs)
 		self._datatype = t_datatype.text
 		self._value = self._text	# button's value is its text
-
-	# def tapped(self,touchPoint):
-	# 	if not self._enabled:
-	# 		return False
-	# 	tp = touchPoint
-	# 	nw = self._w * 1024 / tft.width()	# normalized button width
-	# 	nh = self._h * 1024 / tft.height()	# normalized button height
-	# 	nx = self._x * 1024 / tft.width()	# normalized button x position
-	# 	ny = self._y * 1024 / tft.height()	# normalized button y position
-	# 	if nx <= tp['x'] <= (nx+nw):
-	# 		if ny <= tp['y'] <= (ny+nh):
-	# 			self._callback(self._value)
-	# 			return True
-	# 		else:
-	# 			return False
-	# 	else:
-	# 		return False
-
-	# def render(self):
-	# 	Control.render(self)
 
 class Toggle(Button):
 	def __init__(self,**kwargs):
@@ -427,9 +406,10 @@ class Toggle(Button):
 	def selected(self,s=None):
 		if s:
 			self._selected = bool(s)
+			self.render()
 		elif s==False:
 			self._selected = s
-		self.render()
+			self.render()
 		return self._selected
 
 	def fg_color(self,fg_color=None):
@@ -450,17 +430,9 @@ class Toggle(Button):
 
 	def tapped(self,touchPoint):
 		if Button.tapped(self,touchPoint):
-			self._selected = ~self._selected
-			self.render()
-
-
-
-
+			self.selected(~self._selected)
 
 # Spinbox is made up of a Label, an Input, and two Buttons
-# Spinbox has a tapped event (passed between both buttons)
-# required args: size, x, y, w, h, fg_color, bg_color
-# options args: datatype, enabled, value, text, mn, mx, callback
 class Spinbox(Input):
 	def __init__(self,**kwargs):
 		kwargs['datatype'] = t_datatype.number # spinbox must be number type
@@ -479,8 +451,6 @@ class Spinbox(Input):
 		self._label = Label(
 			border=0,
 			size=self._size,
-			x=0,
-			y=0,
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
 			text=self._text
@@ -494,8 +464,6 @@ class Spinbox(Input):
 		self._input = Input(
 			border=0,
 			size=self._size,
-			x=0,
-			y=0,
 			w=8*maxlen*(self._size+1),
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
@@ -506,8 +474,6 @@ class Spinbox(Input):
 		self._upBtn = Button(
 			border=0,
 			size=self._size,
-			x=0,
-			y=0,
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
 			onTap=self.change,
@@ -518,8 +484,6 @@ class Spinbox(Input):
 		self._dnBtn = Button(
 			border=0,
 			size=self._size,
-			x=0,
-			y=0,
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
 			onTap=self.change,
@@ -626,6 +590,13 @@ class Listbox(Grid,Input):
 				else:
 					t.selected(False)
 		return Input.value(self,val)
+
+	def enabled(self,en=None):
+		if en:
+			for c in self.controls():
+				try:
+					c.enabled(en)
+		return Input.enabled(self,en)
 
 
 # Common class for screens
@@ -969,6 +940,16 @@ display_input = Input(
 		value='Tap...'
 		)
 
+en = Toggle(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Enable 1',
+		selected=True,
+		onTapArgs=['_selected'],
+		onTap=t1.enabled
+		)
+
 t1 = Toggle(
 		size=2,
 		fg_color=fg,
@@ -1028,11 +1009,27 @@ btn = Button(
 btn.top(50)
 btn.right()
 
-toggle_screen.controls([display_input,tgrid,btn])
+en.top(50)
+en.left()
+
+toggle_screen.controls([en,display_input,tgrid,btn])
 
 ###############	listbx_screen controls ###############
 fg = listbox_screen.fg_color()
 bg = listbox_screen.bg_color()
+
+en = Toggle(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Enable',
+		selected=True,
+		onTapArgs=['_selected'],
+		onTap=lbox.enabled
+		)
+
+en.top(50)
+en.left()
 
 lbl= Label(
 		border=0,
@@ -1098,7 +1095,7 @@ btn = Button(
 btn.center(150)
 btn.middle(350)
 
-listbox_screen.controls([lbl,lbox,btn])
+listbox_screen.controls([en,lbl,lbox,btn])
 
 
 
