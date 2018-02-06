@@ -369,15 +369,15 @@ class Input(Control):
 
 	def render(self):
 		if self._enabled:
-			bg_color = self._bg_color
+			bg_color = self.bg_color()
 		else:
 			bg_color = RA8875_BLACK		# probably will need a more clear disabled style i.e. gray, italic, strikethrough, etc
 		tft.graphicsMode()
 		tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
 		for b in range(self._border):
-			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self._fg_color)
+			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
 		tft.textMode()
-		tft.textColor(self._fg_color,bg_color)
+		tft.textColor(self.fg_color(),bg_color)
 		# setting for center/middle of rect
 		tft.textSetCursor(self._x+int(self._w/2)-int(self.value_width()/2),self._y+int(self._h/2)-int(self.value_height()/2))
 		tft.textEnlarge(self._size)
@@ -392,6 +392,8 @@ class Input(Control):
 class Button(Input):
 	def __init__(self,**kwargs):
 		Input.__init__(self,**kwargs)
+		self._datatype = t_datatype.text
+		self._value = self._text	# button's value is its text
 
 	# def tapped(self,touchPoint):
 	# 	if not self._enabled:
@@ -433,7 +435,7 @@ class Toggle(Button):
 	def fg_color(self,fg_color=None):
 		if fg_color:
 			self._fg_color = int(fg_color)
-		if self._selected:
+		if not self._selected:
 			return self._fg_color
 		else:
 			return self._bg_color
@@ -441,7 +443,7 @@ class Toggle(Button):
 	def bg_color(self,bg_color=None):
 		if bg_color:
 			self._bg_color = int(bg_color)
-		if self._selected:
+		if not self._selected:
 			return self._bg_color
 		else:
 			return self._fg_color
@@ -595,8 +597,8 @@ class Spinbox(Input):
 		self._dnBtn.render()
 
 	def tapped(self,touchPoint):
-		self._upBtn.tapped(touchPoint):
-		self._dnBtn.tapped(touchPoint):
+		self._upBtn.tapped(touchPoint)
+		self._dnBtn.tapped(touchPoint)
 		return Input.tapped(self,touchPoint)
 
 # Listbox is a container for Toggle instances - toggles callbacks will be overwritten to control the listbox value
