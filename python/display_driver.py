@@ -207,7 +207,8 @@ class Control:
 		ny = self._y * 1024 / tft.height()	# normalized y position
 		if nx <= tp['x'] <= (nx+nw):
 			if ny <= tp['y'] <= (ny+nh):
-				self._onTap(*self.listArgs(self._onTapArgs))
+				print self.listArgs(*self._onTapArgs)
+				self._onTap(*self.listArgs(*self._onTapArgs))
 				return True
 			else:
 				return False
@@ -226,7 +227,7 @@ class Control:
 		tft.textEnlarge(self._size)
 		tft.textWrite(self._text,0)
 		tft.graphicsMode()
-		self._onRender(*self.listArgs(self._onRenderArgs))
+		self._onRender(*self.listArgs(*self._onRenderArgs))
 
 
 # do I need multi-line labels?
@@ -338,6 +339,9 @@ class Input(Control):
 		if en:
 			self._enabled = en
 			self.render()
+		elif en==False:
+			self._enabled = en
+			self.render()
 		return self._enabled
 
 	def value(self,val=None):
@@ -361,8 +365,8 @@ class Input(Control):
 	def change(self,val):
 		if self._value != val:
 			self.value(val)
+			self._onChange(*self.listArgs(*self._onChangeArgs))
 			self.render()
-			self._onChange(*self.listArgs(self._onChangeArgs))
 
 	def tapped(self,touchPoint):
 		if not self._enabled:
@@ -386,7 +390,7 @@ class Input(Control):
 		tft.textEnlarge(self._size)
 		tft.textWrite(str(self._value),0)
 		tft.graphicsMode()
-		self._onRender(*self._onRenderArgs)
+		self._onRender(*self.listArgs(*self._onRenderArgs))
 
 class Button(Input):
 	def __init__(self,**kwargs):
@@ -399,16 +403,18 @@ class Toggle(Button):
 		Button.__init__(self,**kwargs)
 
 		if 'selected' in kwargs:
-			self._selected = bool(selected)
+			self._selected = bool(kwargs['selected'])
 		else:
 			self._selected = False
 
 	def selected(self,s=None):
 		if s:
 			self._selected = bool(s)
+			self._onChange(*self.listArgs(*self._onChangeArgs))
 			self.render()
 		elif s==False:
 			self._selected = s
+			self._onChange(*self.listArgs(*self._onChangeArgs))
 			self.render()
 		return self._selected
 
@@ -430,7 +436,7 @@ class Toggle(Button):
 
 	def tapped(self,touchPoint):
 		if Button.tapped(self,touchPoint):
-			self.selected(~self._selected)
+			self.selected(not self._selected)
 
 # Spinbox is made up of a Label, an Input, and two Buttons
 class Spinbox(Input):
@@ -594,8 +600,7 @@ class Listbox(Grid,Input):
 	def enabled(self,en=None):
 		if en:
 			for c in self.controls():
-				try:
-					c.enabled(en)
+				c.enabled(en)
 		return Input.enabled(self,en)
 
 
@@ -940,16 +945,6 @@ display_input = Input(
 		value='Tap...'
 		)
 
-en = Toggle(
-		size=2,
-		fg_color=fg,
-		bg_color=bg,
-		text='Enable 1',
-		selected=True,
-		onTapArgs=['_selected'],
-		onTap=t1.enabled
-		)
-
 t1 = Toggle(
 		size=2,
 		fg_color=fg,
@@ -974,10 +969,10 @@ t3 = Toggle(
 		size=2,
 		fg_color=fg,
 		bg_color=bg,
-		text='Toggle 3',
-		datatype=t_datatype.text,
-		onTapArgs=['Got 3!'],
-		onTap=display_input.change
+		text='Enable 1',
+		selected=True,
+		onChangeArgs=['_selected'],
+		onChange=t1.enabled
 		)
 
 display_input.center()
@@ -1009,27 +1004,11 @@ btn = Button(
 btn.top(50)
 btn.right()
 
-en.top(50)
-en.left()
-
-toggle_screen.controls([en,display_input,tgrid,btn])
+toggle_screen.controls([display_input,tgrid,btn])
 
 ###############	listbx_screen controls ###############
 fg = listbox_screen.fg_color()
 bg = listbox_screen.bg_color()
-
-en = Toggle(
-		size=2,
-		fg_color=fg,
-		bg_color=bg,
-		text='Enable',
-		selected=True,
-		onTapArgs=['_selected'],
-		onTap=lbox.enabled
-		)
-
-en.top(50)
-en.left()
 
 lbl= Label(
 		border=0,
@@ -1094,6 +1073,19 @@ btn = Button(
 
 btn.center(150)
 btn.middle(350)
+
+en = Toggle(
+		size=2,
+		fg_color=fg,
+		bg_color=bg,
+		text='Enable',
+		selected=True,
+		onTapArgs=['_selected'],
+		onTap=lbox.enabled
+		)
+
+en.top(50)
+en.left()
 
 listbox_screen.controls([en,lbl,lbox,btn])
 
