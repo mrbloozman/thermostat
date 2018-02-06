@@ -31,6 +31,26 @@ class t_datatype(enum.Enum):
 # optional args: w, h
 class Control:
 	def __init__(self,**kwargs):
+		if 'onTap' in kwargs:
+			self._onTap = kwargs['onTap']
+		else:
+			self._onTap = self.skip
+
+		if 'onTapArgs' in kwargs:
+			self._onTapArgs = kwargs['onTapArgs']
+		else:
+			self._onTapArgs = []
+
+		if 'onRender' in kwargs:
+			self._onRender = kwargs['onRender']
+		else:
+			self._onRender = self.skip
+
+		if 'onRenderArgs' in kwargs:
+			self._onRenderArgs = kwargs['onRenderArgs']
+		else:
+			self._onRenderArgs = []
+
 		if 'size' in kwargs:
 			self._size = int(kwargs['size']) # text enlargement size 0-3
 		else:
@@ -75,6 +95,9 @@ class Control:
 			self._border = int(kwargs['border'])
 		else:
 			self._border = 1
+
+	def skip(self,*args):
+		pass
 
 	def text(self,t=None):
 		if t:
@@ -169,8 +192,20 @@ class Control:
 			y = tft.height()
 		self._y = y-self._h
 
-	def tapped(self,tp):
-		return False	# default response
+	def tapped(self,touchPoint):
+		tp = touchPoint
+		nw = self._w * 1024 / tft.width()	# normalized width
+		nh = self._h * 1024 / tft.height()	# normalized height
+		nx = self._x * 1024 / tft.width()	# normalized x position
+		ny = self._y * 1024 / tft.height()	# normalized y position
+		if nx <= tp['x'] <= (nx+nw):
+			if ny <= tp['y'] <= (ny+nh):
+				self._onTap(*self._onTapArgs)
+				return True
+			else:
+				return False
+		else:
+			return False
 
 	def render(self):
 		tft.graphicsMode()
@@ -184,6 +219,8 @@ class Control:
 		tft.textEnlarge(self._size)
 		tft.textWrite(self._text,0)
 		tft.graphicsMode()
+		self._onRender(*self._onRenderArgs)
+
 
 # do I need multi-line labels?
 # required args: size, x, y, w, h, fg_color, bg_color, text
@@ -250,9 +287,11 @@ class Grid(Control):
 
 	def tapped(self,touchPoint):
 		for c in self._controls:
-			if c.tapped(touchPoint):
-				return True
-		return False
+			c.tapped(touchPoint)
+		if Control.tapped(self,touchPoint):
+			return True
+		else:
+			return False
 	
 
 # required args: size, x, y, w, h, fg_color, bg_color
@@ -260,6 +299,16 @@ class Grid(Control):
 class Input(Control):
 	def __init__(self,**kwargs):
 		Control.__init__(self,**kwargs)
+
+		if 'onChange' in kwargs:
+			self._onChange = kwargs['onChange']
+		else:
+			self._onChange = self.skip
+
+		if 'onChangeArgs' in kwargs:
+			self._onChangeArgs = kwargs['onChangeArgs']
+		else:
+			self._onChangeArgs = []
 
 		if 'datatype' in kwargs:
 			self._datatype = kwargs['datatype']
@@ -308,19 +357,21 @@ class Input(Control):
 
 	def change(self,val):
 		if self._value != val:
-			if self._datatype == t_datatype.text:
-				self._value = str(val)
-			elif self._datatype == t_datatype.number:
-				self._value = int(val)
-			else:
-				self._value = val
+			self.value(val)
 			self.render()
+			self._onChange(*self._onChangeArgs)
+
+	def tapped(self,touchPoint):
+		if not self._enabled:
+			return False
+		else:
+			return Control.tapped(self,touchPoint)
 
 	def render(self):
 		if self._enabled:
 			bg_color = self._bg_color
 		else:
-			bg_color = RA8875_BLACK
+			bg_color = RA8875_BLACK		# probably will need a more clear disabled style i.e. gray, italic, strikethrough, etc
 		tft.graphicsMode()
 		tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
 		for b in range(self._border):
@@ -332,6 +383,7 @@ class Input(Control):
 		tft.textEnlarge(self._size)
 		tft.textWrite(str(self._value),0)
 		tft.graphicsMode()
+		self._onRender(*self._onRenderArgs)
 
 
 # Button has a tapped event
@@ -341,36 +393,25 @@ class Button(Input):
 	def __init__(self,**kwargs):
 		Input.__init__(self,**kwargs)
 
-		if 'callback' in kwargs:
-			self._callback = kwargs['callback']
-		else:
-			self._callback = self.skip
+	# def tapped(self,touchPoint):
+	# 	if not self._enabled:
+	# 		return False
+	# 	tp = touchPoint
+	# 	nw = self._w * 1024 / tft.width()	# normalized button width
+	# 	nh = self._h * 1024 / tft.height()	# normalized button height
+	# 	nx = self._x * 1024 / tft.width()	# normalized button x position
+	# 	ny = self._y * 1024 / tft.height()	# normalized button y position
+	# 	if nx <= tp['x'] <= (nx+nw):
+	# 		if ny <= tp['y'] <= (ny+nh):
+	# 			self._callback(self._value)
+	# 			return True
+	# 		else:
+	# 			return False
+	# 	else:
+	# 		return False
 
-	def skip(self,x):
-		pass
-
-	def callback(self,cb):
-		self._callback = cb
-
-	def tapped(self,touchPoint):
-		if not self._enabled:
-			return False
-		tp = touchPoint
-		nw = self._w * 1024 / tft.width()	# normalized button width
-		nh = self._h * 1024 / tft.height()	# normalized button height
-		nx = self._x * 1024 / tft.width()	# normalized button x position
-		ny = self._y * 1024 / tft.height()	# normalized button y position
-		if nx <= tp['x'] <= (nx+nw):
-			if ny <= tp['y'] <= (ny+nh):
-				self._callback(self._value)
-				return True
-			else:
-				return False
-		else:
-			return False
-
-	def render(self):
-		Control.render(self)
+	# def render(self):
+	# 	Control.render(self)
 
 class Toggle(Button):
 	def __init__(self,**kwargs):
@@ -433,11 +474,6 @@ class Spinbox(Input):
 		else: 
 			self._mx = 100
 
-		if 'callback' in kwargs:
-			self._callback = kwargs['callback']
-		else:
-			self._callback = self.skip
-
 		self._label = Label(
 			border=0,
 			size=self._size,
@@ -472,8 +508,8 @@ class Spinbox(Input):
 			y=0,
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
-			callback=self.change,
-			value=1,
+			onTap=self.change,
+			onTapArgs=[1],
 			text=chr(0x1e)
 			)
 
@@ -484,8 +520,8 @@ class Spinbox(Input):
 			y=0,
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
-			callback=self.change,
-			value=-1,
+			onTap=self.change,
+			onTapArgs=[-1],
 			text=chr(0x1f)
 			)
 
@@ -530,31 +566,26 @@ class Spinbox(Input):
 	def bottom(self,y=None):
 		Input.bottom(self,y)
 		self.position()
-
-	def skip(self,x):
-		pass
-
-	def callback(self,cb):
-		self._callback = cb
 		
 	def change(self,n):
-		# print 'change('+str(n)+')'
-		if self._mn <= self._value+n <= self._mx:
-			self._value = self._value+n
-			self._input.value(self._value)
-			self._input.render()
+		val = self._value+n
+		if self._mn <= val <= self._mx:
+			Input.change(self,val)
+			self._input.change(self._value)
+
+	def enabled(self,en=None):
+		if en:
+			self._input.enabled(en)
+			self._upBtn.enabled(en)
+			self._dnBtn.enabled(en)
+		return Input.enabled(self,en)
+
 
 	def render(self):
-		if self.enabled:
+		if self._enabled:
 			bg_color = self._bg_color
-			self._input.enabled(True)
-			self._upBtn.enabled(True)
-			self._dnBtn.enabled(True)
 		else:
 			bg_color = RA8875_BLACK
-			self._input.enabled(False)
-			self._upBtn.enabled(False)
-			self._dnBtn.enabled(False)
 		tft.graphicsMode()
 		tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
 		tft.drawRect(self._x,self._y,self._w,self._h,self._fg_color)
@@ -564,14 +595,9 @@ class Spinbox(Input):
 		self._dnBtn.render()
 
 	def tapped(self,touchPoint):
-		# print 'spinbox tapped()'
-		if self._upBtn.tapped(touchPoint):
-			self._callback(self._value)
-			return True
-		elif self._dnBtn.tapped(touchPoint):
-			self._callback(self._value)
-			return True
-		return False
+		self._upBtn.tapped(touchPoint):
+		self._dnBtn.tapped(touchPoint):
+		return Input.tapped(self,touchPoint)
 
 # Listbox is a container for Toggle instances - toggles callbacks will be overwritten to control the listbox value
 class Listbox(Grid,Input):
@@ -586,15 +612,18 @@ class Listbox(Grid,Input):
 		Input.__init__(self,**kwargs)
 
 		for t in self._controls:
-			t.callback(self.change)
-		self.change(self._value)
+			t._onTap = self.change
+			t._onTapArgs = [t._value]
+		self.value(self._value)
 
-	def change(self,val):
-		for t in self._controls:
-			if val == t.value():
-				t.selected(True)
-			else:
-				t.selected(False)
+	def value(self,val=None):
+		if val:
+			for t in self._controls:
+				if val == t.value():
+					t.selected(True)
+				else:
+					t.selected(False)
+		return Input.value(self,val)
 
 
 # Common class for screens
@@ -748,8 +777,8 @@ menu_btn = Button(
 		y=20,
 		fg_color=RA8875_BLACK,
 		bg_color=RA8875_WHITE,
-		callback=menu_screen.active,
-		value=True,
+		onTap=menu_screen.active,
+		onTapArgs=[True],
 		text='MENU'
 		)
 menu_btn.center()
@@ -764,8 +793,8 @@ mainscreen_btn = Button(
 		size=1,
 		fg_color=menu_screen.fg_color(),
 		bg_color=menu_screen.bg_color(),
-		value=True,
-		callback=main_screen.active,
+		onTapArgs=[True],
+		onTap=main_screen.active,
 		text='Main Screen'
 		)
 
@@ -774,8 +803,8 @@ spinscreen_btn = Button(
 		size=1,
 		fg_color=menu_screen.fg_color(),
 		bg_color=menu_screen.bg_color(),
-		value=True,
-		callback=spin_screen.active,
+		onTapArgs=[True],
+		onTap=spin_screen.active,
 		text='Spinbox Test'
 		)
 
@@ -785,8 +814,8 @@ test_btn1 = Button(
 		fg_color=menu_screen.fg_color(),
 		bg_color=menu_screen.bg_color(),
 		text='Toggle Test',
-		callback=toggle_screen.active,
-		value=True
+		onTap=toggle_screen.active,
+		onTapArgs=[True]
 		)
 
 test_btn2 = Button(
@@ -795,8 +824,8 @@ test_btn2 = Button(
 		fg_color=menu_screen.fg_color(),
 		bg_color=menu_screen.bg_color(),
 		text='Listbox Test',
-		callback=listbox_screen.active,
-		value=True
+		onTap=listbox_screen.active,
+		onTapArgs=[True]
 		)
 
 lbl0 = Label(
@@ -916,8 +945,8 @@ submit_btn = Button(
 		size=2,
 		fg_color=RA8875_BLACK,
 		bg_color=RA8875_YELLOW,
-		callback=main_screen.active,
-		value=True,
+		onTap=main_screen.active,
+		onTapArgs=[True],
 		text='SUBMIT'
 		)
 submit_btn.center()
@@ -944,8 +973,8 @@ t1 = Toggle(
 		bg_color=bg,
 		text='Toggle 1',
 		datatype=t_datatype.text,
-		value='Got 1!',
-		callback=display_input.change
+		onTapArgs=['Got 1!'],
+		onTap=display_input.change
 		)
 
 t2 = Toggle(
@@ -954,8 +983,8 @@ t2 = Toggle(
 		bg_color=bg,
 		text='Toggle 2',
 		datatype=t_datatype.text,
-		value='Got 2!',
-		callback=display_input.change
+		onTapArgs=['Got 2!'],
+		onTap=display_input.change
 		)
 
 t3 = Toggle(
@@ -964,8 +993,8 @@ t3 = Toggle(
 		bg_color=bg,
 		text='Toggle 3',
 		datatype=t_datatype.text,
-		value='Got 3!',
-		callback=display_input.change
+		onTapArgs=['Got 3!'],
+		onTap=display_input.change
 		)
 
 display_input.center()
@@ -990,8 +1019,8 @@ btn = Button(
 		fg_color=bg,
 		bg_color=fg,
 		text='EXIT',
-		callback=main_screen.active,
-		value=True
+		onTap=main_screen.active,
+		onTapArgs=[True]
 		)
 
 btn.top(50)
@@ -1060,8 +1089,8 @@ btn = Button(
 		fg_color=fg,
 		bg_color=bg,
 		text='OK',
-		callback=main_screen.active,
-		value=True
+		onTap=main_screen.active,
+		onTapArgs=[True]
 		)
 
 btn.center(150)
