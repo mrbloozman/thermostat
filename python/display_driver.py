@@ -410,11 +410,11 @@ class Toggle(Button):
 	def selected(self,s=None):
 		if s:
 			self._selected = bool(s)
-			self._onChange(*self.listArgs(*self._onChangeArgs))
+			# self._onChange(*self.listArgs(*self._onChangeArgs))
 			self.render()
 		elif s==False:
 			self._selected = s
-			self._onChange(*self.listArgs(*self._onChangeArgs))
+			# self._onChange(*self.listArgs(*self._onChangeArgs))
 			self.render()
 		return self._selected
 
@@ -591,10 +591,8 @@ class Listbox(Grid,Input):
 	def value(self,val=None):
 		if val:
 			for t in self._controls:
-				if val == t.value():
-					t.selected(True)
-				else:
-					t.selected(False)
+				if val != t.value():
+					t._selected(False)
 		return Input.value(self,val)
 
 	def enabled(self,en=None):
