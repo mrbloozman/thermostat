@@ -207,7 +207,7 @@ class Control:
 		ny = self._y * 1024 / tft.height()	# normalized y position
 		if nx <= tp['x'] <= (nx+nw):
 			if ny <= tp['y'] <= (ny+nh):
-				print self.listArgs(*self._onTapArgs)
+				# print self.listArgs(*self._onTapArgs)
 				self._onTap(*self.listArgs(*self._onTapArgs))
 				return True
 			else:
@@ -407,14 +407,24 @@ class Toggle(Button):
 		else:
 			self._selected = False
 
+		if 'onSelect' in kwargs:
+			self._onSelect = kwargs['onSelect']
+		else:
+			self._onSelect = self.skip
+
+		if 'onSelectArgs' in kwargs:
+			self._onSelectArgs = kwargs['onSelectArgs']
+		else:
+			self._onSelectArgs = []
+
 	def selected(self,s=None):
 		if s:
 			self._selected = bool(s)
-			# self._onChange(*self.listArgs(*self._onChangeArgs))
+			self._onSelect(*self.listArgs(*self._onSelectArgs))
 			self.render()
 		elif s==False:
 			self._selected = s
-			# self._onChange(*self.listArgs(*self._onChangeArgs))
+			self._onSelect(*self.listArgs(*self._onSelectArgs))
 			self.render()
 		return self._selected
 
@@ -592,11 +602,11 @@ class Listbox(Grid,Input):
 		if val:
 			for t in self._controls:
 				if val != t.value():
-					t._selected(False)
+					t._selected=False
 		return Input.value(self,val)
 
 	def enabled(self,en=None):
-		if en:
+		if en or en==False:
 			for c in self.controls():
 				c.enabled(en)
 		return Input.enabled(self,en)
@@ -969,8 +979,8 @@ t3 = Toggle(
 		bg_color=bg,
 		text='Enable 1',
 		selected=True,
-		onChangeArgs=['_selected'],
-		onChange=t1.enabled
+		onSelectArgs=['_selected'],
+		onSelect=t1.enabled
 		)
 
 display_input.center()
@@ -1078,8 +1088,8 @@ en = Toggle(
 		bg_color=bg,
 		text='Enable',
 		selected=True,
-		onTapArgs=['_selected'],
-		onTap=lbox.enabled
+		onSelectArgs=['_selected'],
+		onSelect=lbox.enabled
 		)
 
 en.top(50)
