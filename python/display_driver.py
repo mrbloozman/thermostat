@@ -94,6 +94,22 @@ class Control:
 		else:
 			self._border = 1
 
+		if 'padding' in kwargs:
+			self.padding(int(kwargs['padding']))
+		else:
+			self._padding = 0
+
+	def padding(self,p):
+		if p:
+			self._padding = int(p)
+			minw = (self._border*2)+(self._padding*2)+self.text_width()
+			miny = (self._border*2)+(self._padding*2)+self.text_height()
+			if self._w < minw:
+				self._w = minw
+			if self._y < miny:
+				self._y = miny
+		return self._padding
+
 	def skip(self,*args):
 		pass
 
@@ -228,6 +244,7 @@ class Control:
 		tft.textWrite(self._text,0)
 		tft.graphicsMode()
 		self._onRender(*self.listArgs(*self._onRenderArgs))
+		
 
 
 # do I need multi-line labels?
@@ -366,7 +383,6 @@ class Input(Control):
 		if self._value != val:
 			self.value(val)
 			self._onChange(*self.listArgs(*self._onChangeArgs))
-			self.render()
 
 	def tapped(self,touchPoint):
 		if not self._enabled:
@@ -410,7 +426,7 @@ class Toggle(Button):
 		if 'onSelect' in kwargs:
 			self._onSelect = kwargs['onSelect']
 		else:
-			self._onSelect = self.skip
+			self._onSelect = self.render
 
 		if 'onSelectArgs' in kwargs:
 			self._onSelectArgs = kwargs['onSelectArgs']
@@ -421,11 +437,9 @@ class Toggle(Button):
 		if s:
 			self._selected = bool(s)
 			self._onSelect(*self.listArgs(*self._onSelectArgs))
-			self.render()
 		elif s==False:
 			self._selected = s
 			self._onSelect(*self.listArgs(*self._onSelectArgs))
-			self.render()
 		return self._selected
 
 	def fg_color(self,fg_color=None):
@@ -484,7 +498,8 @@ class Spinbox(Input):
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
 			datatype=self._datatype,
-			value=self._value
+			value=self._value,
+			onChange=self.render
 			)
 
 		self._upBtn = Button(
@@ -618,9 +633,17 @@ class Listbox(Grid,Input):
 class Screen:
 	def __init__(self,**kwargs):
 		self._id = kwargs['id']
-		self._fg_color = kwargs['fg_color']
-		self._bg_color = kwargs['bg_color']
 		self._active = False
+
+		if 'fg_color' in kwargs:
+			self._fg_color = kwargs['fg_color']
+		else:
+			self._fg_color = RA8875_WHITE
+
+		if 'bg_color' in kwargs:
+			self._bg_color = kwargs['bg_color']
+		else:
+			self._bg_color = RA8875_BLACK
 
 		if 'controls' in kwargs:
 			self._controls = kwargs['controls']
@@ -744,8 +767,8 @@ screens = [main_screen,menu_screen,spin_screen,toggle_screen,listbox_screen]
 ###############	main_screen controls ###############
 lbl = Label(
 		size=2,
-		x=50,
-		y=240,
+		# x=50,
+		# y=240,
 		w=700,
 		h=120,
 		fg_color=RA8875_WHITE,
@@ -753,6 +776,7 @@ lbl = Label(
 		text=status['message']
 		)
 lbl.center()
+lbl.top(240)
 
 # required args: size, x, y, w, h, fg_color, bg_color
 # options args: datatype, enabled, value, text, callback
@@ -814,84 +838,6 @@ test_btn2 = Button(
 		onTapArgs=[True]
 		)
 
-lbl0 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl0'
-	)
-
-lbl1 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl1'
-	)
-
-lbl2 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl2'
-	)
-
-lbl3 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl3'
-	)
-
-lbl4 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl4'
-	)
-
-lbl5 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl5'
-	)
-
-lbl6 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl6'
-	)
-
-lbl7 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl7'
-	)
-
-lbl8 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl8'
-	)
-
-lbl9 = Label(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_BLUE,
-		text='lbl9'
-	)
-
-mini_grid = Grid(
-		border=5,
-		fg_color=RA8875_CYAN,
-		bg_color=RA8875_MAGENTA,
-		rows=3,
-		cols=3,
-		controls=[lbl1,lbl2,lbl3,lbl4,lbl5,lbl6,lbl7,lbl8,lbl9])
-
 menu_grid = Grid(
 		border=5,
 		size=1,
@@ -900,8 +846,8 @@ menu_grid = Grid(
 		fg_color=menu_screen.fg_color(),
 		bg_color=menu_screen.bg_color(),
 		rows=2,
-		cols=3,
-		controls=[mainscreen_btn,spinscreen_btn,test_btn1,test_btn2,lbl0,mini_grid]
+		cols=2,
+		controls=[mainscreen_btn,spinscreen_btn,test_btn1,test_btn2]
 		)
 
 menu_grid.center()
@@ -1088,8 +1034,8 @@ en = Toggle(
 		bg_color=bg,
 		text='Enable',
 		selected=True,
-		onSelectArgs=['_selected'],
-		onSelect=lbox.enabled
+		onRenderArgs=['_selected'],
+		onRender=lbox.enabled
 		)
 
 en.top(50)
