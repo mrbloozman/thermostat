@@ -82,12 +82,12 @@ class Control:
 		if 'w' in kwargs:
 			self._w = int(kwargs['w'])
 		else:
-			self._w = self.text_width()
+			self._w = 0
 
 		if 'h' in kwargs:
 			self._h = int(kwargs['h'])
 		else:
-			self._h = self.text_height()
+			self._h = 0
 
 		if 'border' in kwargs:
 			self._border = int(kwargs['border'])
@@ -97,17 +97,19 @@ class Control:
 		if 'padding' in kwargs:
 			self.padding(int(kwargs['padding']))
 		else:
-			self._padding = 0
+			self.padding(0)
 
 	def padding(self,p):
 		if p:
 			self._padding = int(p)
-			minw = (self._border*2)+(self._padding*2)+self.text_width()
-			miny = (self._border*2)+(self._padding*2)+self.text_height()
-			if self._w < minw:
-				self._w = minw
-			if self._y < miny:
-				self._y = miny
+		elif p==0:
+			self._padding = 0
+		minw = (self._border*2)+(self._padding*2)+self.text_width()
+		minh = (self._border*2)+(self._padding*2)+self.text_height()
+		if self._w < minw:
+			self._w = minw
+		if self._h < minh:
+			self._h = minh
 		return self._padding
 
 	def skip(self,*args):
@@ -121,6 +123,8 @@ class Control:
 	def border(self,b=None):
 		if b:
 			self._border = int(b)
+		elif b==0:
+			self._border = 0
 		return self._border
 
 	def text_width(self):
@@ -132,6 +136,8 @@ class Control:
 	def size(self,s=None):
 		if s:
 			self._size = int(s)
+		elif s==0:
+			self._size = 0
 		return self._size
 
 	def x(self,x=None):
@@ -157,11 +163,15 @@ class Control:
 	def fg_color(self,fg_color=None):
 		if fg_color:
 			self._fg_color = int(fg_color)
+		elif fg_color==0:
+			self._fg_color = 0
 		return self._fg_color
 
 	def bg_color(self,bg_color=None):
 		if bg_color:
 			self._bg_color = int(bg_color)
+		elif bg_color==0:
+			self._bg_color=0
 		return self._bg_color
 
 	def left(self,x=None):
@@ -249,6 +259,8 @@ class Control:
 class Label(Control):
 	def __init__(self,**kwargs):
 		Control.__init__(self,**kwargs)
+		if 'border' not in kwargs:
+			self.border(0)
 
 class Grid(Control):
 	def __init__(self,**kwargs):
@@ -268,6 +280,10 @@ class Grid(Control):
 		if 'bg_color' in kwargs:
 			for c in self._controls:
 				c.bg_color(kwargs['bg_color'])
+
+		if 'border' in kwargs:
+			for c in self._controls:
+				c.border(kwargs['border'])
 
 		self.position()
 
@@ -389,6 +405,7 @@ class Input(Control):
 		if self._value != val:
 			self.value(val)
 			self._onChange(*self.listArgs(*self._onChangeArgs))
+			self._onRender(*self.listArgs(*self._onRenderArgs))
 
 	def tapped(self,touchPoint):
 		if not self._enabled:
@@ -762,18 +779,22 @@ welcome_lbl = Label(
 		)
 
 welcome_lbl.left(10)
-welcome_lbl.top(25)
+welcome_lbl.bottom(50)
 
 instruction_lbl = Label(
-		text='Touch anywhere on the screen to continue...'
+		text='Touch anywhere on the screen to continue...',
+		size=1
 		)
 
 instruction_lbl.left(10)
-instruction_lbl.middle()
+instruction_lbl.top(50)
 
 btn = Button(
 		onTap=menu_screen.active,
-		onTapArgs=[True]
+		onTapArgs=[True],
+		w=tft.width()-1,
+		h=tft.height()-1,
+		border=0
 		)
 
 main_screen.controls([btn,welcome_lbl,instruction_lbl])
@@ -823,7 +844,8 @@ choices_grid = Grid(
 		w=700,
 		h=350,
 		fg_color=RA8875_BLACK,
-		bg_color=RA8875_CYAN
+		bg_color=RA8875_CYAN,
+		border=4
 		)
 
 choices_grid.center()
@@ -844,7 +866,6 @@ heading_lbl.left()
 red_btn = Button(
 		text='Red',
 		size=2,
-		border=5,
 		onTap=buttons_screen.bg_color,
 		onTapArgs=[RA8875_RED])
 
@@ -852,11 +873,13 @@ red_grid = Grid(
 		controls=[red_btn],
 		rows=1,
 		cols=1,
-		h=50,
-		w=100,
+		h=150,
+		w=200,
 		fg_color=RA8875_RED,
 		bg_color=RA8875_WHITE,
-		onTap=buttons_screen.render
+		border=5,
+		onTap=buttons_screen.active,
+		onTapArgs=[True]
 		)
 
 red_grid.left(50)
@@ -873,14 +896,15 @@ green_grid = Grid(
 		controls=[green_btn],
 		rows=1,
 		cols=1,
-		h=50,
-		w=100,
+		h=150,
+		w=200,
 		fg_color=RA8875_GREEN,
 		bg_color=RA8875_WHITE,
-		onTap=buttons_screen.render
+		onTap=buttons_screen.active,
+		onTapArgs=[True]
 		)
 
-green_grid.left(50)
+green_grid.center()
 green_grid.middle()
 
 blue_btn = Button(
@@ -894,17 +918,18 @@ blue_grid = Grid(
 		controls=[blue_btn],
 		rows=1,
 		cols=1,
-		h=50,
-		w=100,
+		h=150,
+		w=200,
 		fg_color=RA8875_BLUE,
 		bg_color=RA8875_WHITE,
-		onTap=buttons_screen.render
+		onTap=buttons_screen.active,
+		onTapArgs=[True]
 		)
 
-blue_grid.left(50)
+blue_grid.right(750)
 blue_grid.middle()
 
-warning_lbl(
+warning_lbl = Label(
 		text='I cannot be held responsible for poor color choices.',
 		size=0,
 		padding=10
@@ -916,17 +941,73 @@ warning_lbl.bottom()
 exit_btn = Button(
 		text='EXIT',
 		size=3,
-		padding=10,
-		border=2
+		padding=25,
+		border=2,
+		onTapArgs=[True],
+		onTap=main_screen.active
 		)
 
 exit_btn.top()
 exit_btn.right()
 
-buttons_screen.controls([heading_lbl,red_grid,green_grid,blue_grid,warning_lbl,exit_btn])
+buttons_screen.controls([
+	heading_lbl,
+	red_grid,
+	green_grid,
+	blue_grid,
+	warning_lbl,
+	exit_btn
+	])
 
 ####################################################
+msg_input = Input(
+	size=3,
+	w=375,
+	h=150,
+	fg_color=RA8875_YELLOW,
+	border=0,
+	value='',
+	datatype=t_datatype.text
+	)
 
+msg_input._onChange = msg_input.render
+
+t1 = Toggle(
+	text='Toggle me',
+	size=2,
+	fg_color=RA8875_YELLOW,
+	bg_color=RA8875_BLUE,
+	padding=50,
+	onTap=msg_input.change,
+	onTapArgs=['Ouch!']
+	)
+
+t2 = Toggle(
+	text='Me too',
+	size=2,
+	padding=50,
+	fg_color=RA8875_YELLOW,
+	bg_color=RA8875_BLUE,
+	enabled=False,
+	onTapArgs=['Not again!'],
+	onTap=msg_input.change,
+	onSelect=t1.enabled, # does enabled render again?
+	onSelectArgs=['False']
+	)
+
+t1._onRender = t2.enabled
+t1._onRenderArgs = ['_selected']
+
+t1.center(200)
+t1.top(50)
+
+t2.center(200)
+t2.top(250)
+
+msg_input.middle()
+msg_input.x(400)
+
+toggles_screen.controls([msg_input,t1,t2])
 ####################################################
 
 ####################################################
@@ -950,6 +1031,7 @@ while True:
 			handleInterrupt(RA8875_INT)
 
 	except KeyboardInterrupt:
+		tft.displayOn(False)
 		GPIO.cleanup()
 		raise
 GPIO.cleanup()
