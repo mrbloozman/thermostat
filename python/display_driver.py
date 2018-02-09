@@ -15,9 +15,10 @@ RA8875_RESET = 'XIO-P3'
 class t_screen(enum.Enum):
 	main = 0
 	menu = 1
-	spin = 2
-	toggle = 3
-	listbx = 4
+	buttons = 2
+	toggles = 3
+	listbox = 4
+	spinbox = 5
 
 class t_datatype(enum.Enum):
 	text = 0
@@ -26,7 +27,6 @@ class t_datatype(enum.Enum):
 	submit = 3
 
 # common class for all controls
-# padding?
 class Control:
 	def __init__(self,**kwargs):
 		if 'onTap' in kwargs:
@@ -245,8 +245,6 @@ class Control:
 		tft.graphicsMode()
 		self._onRender(*self.listArgs(*self._onRenderArgs))
 		
-
-
 # do I need multi-line labels?
 class Label(Control):
 	def __init__(self,**kwargs):
@@ -262,6 +260,14 @@ class Grid(Control):
 			self._controls = kwargs['controls']
 		else:
 			self._controls = []
+
+		if 'fg_color' in kwargs:
+			for c in self._controls:
+				c.fg_color(kwargs['fg_color'])
+
+		if 'bg_color' in kwargs:
+			for c in self._controls:
+				c.bg_color(kwargs['bg_color'])
 
 		self.position()
 
@@ -626,10 +632,7 @@ class Listbox(Grid,Input):
 				c.enabled(en)
 		return Input.enabled(self,en)
 
-
 # Common class for screens
-# required args: id, fg_color, bg_color
-# optional args: controls
 class Screen:
 	def __init__(self,**kwargs):
 		self._id = kwargs['id']
@@ -685,11 +688,7 @@ class Screen:
 		else:
 			self._active = False
 
-
-
-		
-
-
+# app components?
 status = {
 	'screen': -1,
 	'touchPoint':{},
@@ -715,8 +714,6 @@ def handleInterrupt(channel):
 			status['message'] = c.text() + ' tapped'
 			# print status['message']
 
-
-
 tft = Adafruit_RA8875(RA8875_CS, RA8875_RESET)
 
 if not tft.begin(RA8875sizes.RA8875_800x480):
@@ -733,315 +730,210 @@ GPIO.setup(RA8875_INT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 ###############	screens ###############
 main_screen = Screen(
-		id=t_screen.main,
-		fg_color=RA8875_WHITE,
-		bg_color=RA8875_BLUE
+		id=t_screen.main
 		)
 
 menu_screen = Screen(
-		id=t_screen.menu,
-		fg_color=RA8875_YELLOW,
-		bg_color=RA8875_RED
+		id=t_screen.menu
 		)
 
-spin_screen = Screen(
-		id=t_screen.spin,
-		fg_color=RA8875_YELLOW,
-		bg_color=RA8875_BLACK
+buttons_screen = Screen(
+		id=t_screen.buttons
 		)
 
-toggle_screen = Screen(
-		id=t_screen.toggle,
-		fg_color=RA8875_WHITE,
-		bg_color=RA8875_BLUE
+toggles_screen = Screen(
+		id=t_screen.toggles
 		)
 
 listbox_screen = Screen(
-		id=t_screen.listbx,
-		fg_color=RA8875_WHITE,
-		bg_color=RA8875_RED
+		id=t_screen.listbox
 		)
 
-screens = [main_screen,menu_screen,spin_screen,toggle_screen,listbox_screen]
-
-###############	main_screen controls ###############
-lbl = Label(
-		size=2,
-		# x=50,
-		# y=240,
-		w=700,
-		h=120,
-		fg_color=RA8875_WHITE,
-		bg_color=RA8875_MAGENTA,
-		text=status['message']
+spinbox_screen = Screen(
+		id=t_screen.spinbox
 		)
-lbl.center()
-lbl.top(240)
 
-# required args: size, x, y, w, h, fg_color, bg_color
-# options args: datatype, enabled, value, text, callback
-menu_btn = Button(
-		size=3,
-		w=200,
-		h=150,
-		y=20,
-		fg_color=RA8875_BLACK,
-		bg_color=RA8875_WHITE,
+screens = [main_screen,menu_screen,buttons_screen,toggles_screen,listbox_screen,spinbox_screen]
+
+####################################################
+welcome_lbl = Label(
+		text='Welcome to the RA8875 touchscreen demo!',
+		size=1
+		)
+
+welcome_lbl.left(10)
+welcome_lbl.top(25)
+
+instruction_lbl = Label(
+		text='Touch anywhere on the screen to continue...'
+		)
+
+instruction_lbl.left(10)
+instruction_lbl.middle()
+
+btn = Button(
 		onTap=menu_screen.active,
-		onTapArgs=[True],
-		text='MENU'
-		)
-menu_btn.center()
-menu_btn.border(7)
-
-main_screen.controls().append(lbl)
-main_screen.controls().append(menu_btn)
-
-###############	menu_screen controls ###############
-mainscreen_btn = Button(
-		border=5,
-		size=1,
-		fg_color=menu_screen.fg_color(),
-		bg_color=menu_screen.bg_color(),
-		onTapArgs=[True],
-		onTap=main_screen.active,
-		text='Main Screen'
-		)
-
-spinscreen_btn = Button(
-		border=5,
-		size=1,
-		fg_color=menu_screen.fg_color(),
-		bg_color=menu_screen.bg_color(),
-		onTapArgs=[True],
-		onTap=spin_screen.active,
-		text='Spinbox Test'
-		)
-
-test_btn1 = Button(
-		border=5,
-		size=1,
-		fg_color=menu_screen.fg_color(),
-		bg_color=menu_screen.bg_color(),
-		text='Toggle Test',
-		onTap=toggle_screen.active,
 		onTapArgs=[True]
 		)
 
-test_btn2 = Button(
-		border=5,
+main_screen.controls([btn,welcome_lbl,instruction_lbl])
+
+####################################################
+heading_lbl = Label(
+		text='Choose wisely...',
 		size=1,
-		fg_color=menu_screen.fg_color(),
-		bg_color=menu_screen.bg_color(),
-		text='Listbox Test',
+		fg_color=RA8875_CYAN
+		)
+
+heading_lbl.center()
+heading_lbl.top(10)
+
+buttons_btn = Button(
+		size=2,
+		text='Buttons',
+		onTap=buttons_screen.active,
+		onTapArgs=[True]
+		)
+
+toggles_btn = Button(
+		size=2,
+		text='Toggles',
+		onTap=toggles_screen.active,
+		onTapArgs=[True]
+		)
+
+listbox_btn = Button(
+		size=2,
+		text='Listbox',
 		onTap=listbox_screen.active,
 		onTapArgs=[True]
 		)
 
-menu_grid = Grid(
-		border=5,
-		size=1,
-		w=750,
-		h=420,
-		fg_color=menu_screen.fg_color(),
-		bg_color=menu_screen.bg_color(),
+spinbox_btn = Button(
+		size=2,
+		text='Spinbox',
+		onTap=spinbox_screen.active,
+		onTapArgs=[True]
+		)
+
+choices_grid = Grid(
+		controls = [buttons_btn,toggles_btn,listbox_btn,spinbox_btn],
 		rows=2,
 		cols=2,
-		controls=[mainscreen_btn,spinscreen_btn,test_btn1,test_btn2]
-		)
-
-menu_grid.center()
-menu_grid.middle()
-mini_grid.position()
-
-menu_screen.controls().append(menu_grid)
-
-###############	spin_screen controls ###############
-# required args: size, x, y, w, h, fg_color, bg_color
-# options args: datatype, enabled, value, text, mn, mx, callback
-sbox = Spinbox(
-		size=3,
-		w=500,
-		h=250,
-		fg_color=spin_screen.fg_color(),
-		bg_color=spin_screen.bg_color(),
-		value=10,
-		text='Spin: ',
-		mn=0,
-		mx=20
-	)
-sbox.center()
-sbox.middle()
-
-submit_btn = Button(
-		size=2,
-		fg_color=RA8875_BLACK,
-		bg_color=RA8875_YELLOW,
-		onTap=main_screen.active,
-		onTapArgs=[True],
-		text='SUBMIT'
-		)
-submit_btn.center()
-submit_btn.bottom(400)
-
-spin_screen.controls().append(sbox)
-spin_screen.controls().append(submit_btn)
-
-###############	toggle_screen controls ###############
-fg = toggle_screen.fg_color()
-bg = toggle_screen.bg_color()
-
-display_input = Input(
-		size=2,
-		fg_color=fg,
-		bg_color=bg,
-		datatype=t_datatype.text,
-		value='Tap...'
-		)
-
-t1 = Toggle(
-		size=2,
-		fg_color=fg,
-		bg_color=bg,
-		text='Toggle 1',
-		datatype=t_datatype.text,
-		onTapArgs=['Got 1!'],
-		onTap=display_input.change
-		)
-
-t2 = Toggle(
-		size=2,
-		fg_color=fg,
-		bg_color=bg,
-		text='Toggle 2',
-		datatype=t_datatype.text,
-		onTapArgs=['Got 2!'],
-		onTap=display_input.change
-		)
-
-t3 = Toggle(
-		size=2,
-		fg_color=fg,
-		bg_color=bg,
-		text='Enable 1',
-		selected=True,
-		onSelectArgs=['_selected'],
-		onSelect=t1.enabled
-		)
-
-display_input.center()
-display_input.top()
-
-tgrid = Grid(
-		fg_color=fg,
-		bg_color=bg,
-		rows=1,
-		cols=3,
-		controls=[t1,t2,t3],
 		w=700,
-		h=300
+		h=350,
+		fg_color=RA8875_BLACK,
+		bg_color=RA8875_CYAN
 		)
 
-tgrid.center()
-tgrid.middle()
+choices_grid.center()
+choices_grid.bottom(430)
 
-btn = Button(
-		border=5,
-		size=3,
-		fg_color=bg,
-		bg_color=fg,
-		text='EXIT',
-		onTap=main_screen.active,
-		onTapArgs=[True]
-		)
+menu_screen.controls([heading_lbl,choices_grid])
 
-btn.top(50)
-btn.right()
-
-toggle_screen.controls([display_input,tgrid,btn])
-
-###############	listbx_screen controls ###############
-fg = listbox_screen.fg_color()
-bg = listbox_screen.bg_color()
-
-lbl= Label(
-		border=0,
-		size=2,
-		fg_color=fg,
-		bg_color=bg,
-		text='Select...'
-		)
-
-t1 = Toggle(
-		size=2,
-		fg_color=RA8875_YELLOW,
-		bg_color=bg,
-		text='Item 1',
-		datatype=t_datatype.text,
-		value='Got 1!'
-		)
-
-t2 = Toggle(
-		size=2,
-		fg_color=RA8875_YELLOW,
-		bg_color=bg,
-		text='Item 2',
-		datatype=t_datatype.text,
-		value='Got 2!'
-		)
-
-t3 = Toggle(
-		size=2,
-		fg_color=RA8875_YELLOW,
-		bg_color=bg,
-		text='Item 3',
-		datatype=t_datatype.text,
-		value='Got 3!',
-		)
-
-lbl.center(150)
-lbl.middle()
-
-lbox = Listbox(
-		fg_color=fg,
-		bg_color=bg,
-		controls=[t1,t2,t3],
-		w=400,
-		h=350
-		)
-
-lbox.center(550)
-lbox.middle()
-
-btn = Button(
+####################################################
+heading_lbl = Label(
+		text='Choose your favorite color...',
+		size=1,
 		border=2,
-		size=3,
-		w=50,
-		h=50,
-		fg_color=fg,
-		bg_color=bg,
-		text='OK',
-		onTap=main_screen.active,
-		onTapArgs=[True]
-		)
+		padding=5)
 
-btn.center(150)
-btn.middle(350)
+heading_lbl.top()
+heading_lbl.left()
 
-en = Toggle(
+red_btn = Button(
+		text='Red',
 		size=2,
-		fg_color=fg,
-		bg_color=bg,
-		text='Enable',
-		selected=True,
-		onRenderArgs=['_selected'],
-		onRender=lbox.enabled
+		border=5,
+		onTap=buttons_screen.bg_color,
+		onTapArgs=[RA8875_RED])
+
+red_grid = Grid(
+		controls=[red_btn],
+		rows=1,
+		cols=1,
+		h=50,
+		w=100,
+		fg_color=RA8875_RED,
+		bg_color=RA8875_WHITE,
+		onTap=buttons_screen.render
 		)
 
-en.top(50)
-en.left()
+red_grid.left(50)
+red_grid.middle()
 
-listbox_screen.controls([en,lbl,lbox,btn])
+green_btn = Button(
+		text='Green',
+		size=2,
+		border=5,
+		onTap=buttons_screen.bg_color,
+		onTapArgs=[RA8875_GREEN])
+
+green_grid = Grid(
+		controls=[green_btn],
+		rows=1,
+		cols=1,
+		h=50,
+		w=100,
+		fg_color=RA8875_GREEN,
+		bg_color=RA8875_WHITE,
+		onTap=buttons_screen.render
+		)
+
+green_grid.left(50)
+green_grid.middle()
+
+blue_btn = Button(
+		text='Blue',
+		size=2,
+		border=5,
+		onTap=buttons_screen.bg_color,
+		onTapArgs=[RA8875_BLUE])
+
+blue_grid = Grid(
+		controls=[blue_btn],
+		rows=1,
+		cols=1,
+		h=50,
+		w=100,
+		fg_color=RA8875_BLUE,
+		bg_color=RA8875_WHITE,
+		onTap=buttons_screen.render
+		)
+
+blue_grid.left(50)
+blue_grid.middle()
+
+warning_lbl(
+		text='I cannot be held responsible for poor color choices.',
+		size=0,
+		padding=10
+		)
+
+warning_lbl.center()
+warning_lbl.bottom()
+
+exit_btn = Button(
+		text='EXIT',
+		size=3,
+		padding=10,
+		border=2
+		)
+
+exit_btn.top()
+exit_btn.right()
+
+buttons_screen.controls([heading_lbl,red_grid,green_grid,blue_grid,warning_lbl,exit_btn])
+
+####################################################
+
+####################################################
+
+####################################################
+
+####################################################
+
+####################################################
 
 
 
