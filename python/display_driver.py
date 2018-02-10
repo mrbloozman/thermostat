@@ -405,7 +405,8 @@ class Input(Control):
 		if self._value != val:
 			self.value(val)
 			self._onChange(*self.listArgs(*self._onChangeArgs))
-			self._onRender(*self.listArgs(*self._onRenderArgs))
+			# self._onRender(*self.listArgs(*self._onRenderArgs))
+			self.render()
 
 	def tapped(self,touchPoint):
 		if not self._enabled:
@@ -521,8 +522,8 @@ class Spinbox(Input):
 			fg_color=self._fg_color,
 			bg_color=self._bg_color,
 			datatype=self._datatype,
-			value=self._value,
-			onChange=self.render
+			value=self._value
+			# onChange=self.render
 			)
 
 		self._upBtn = Button(
@@ -676,11 +677,15 @@ class Screen:
 	def fg_color(self,fg=None):
 		if fg:
 			self._fg_color = fg
+		elif fg==0:
+			self._fg_color=0
 		return self._fg_color
 
 	def bg_color(self,bg=None):
 		if bg:
 			self._bg_color = bg
+		elif bg==0:
+			self._bg_color=0
 		return self._bg_color
 
 	def controls(self,controls=None):
@@ -992,11 +997,11 @@ t2 = Toggle(
 	onTapArgs=['Not again!'],
 	onTap=msg_input.change,
 	onSelect=t1.enabled, # does enabled render again?
-	onSelectArgs=['False']
+	onSelectArgs=[False]
 	)
 
-t1._onRender = t2.enabled
-t1._onRenderArgs = ['_selected']
+t1._onSelect = t2.enabled
+t1._onSelectArgs = ['_selected']
 
 t1.center(200)
 t1.top(50)
@@ -1009,6 +1014,107 @@ msg_input.x(400)
 
 toggles_screen.controls([msg_input,t1,t2])
 ####################################################
+lbl = Label(
+	text='Change main screen colors'
+	)
+
+fg_lbl = Label(
+	text='Foreground: ',
+	size=1
+	)
+
+ft1 = Toggle(
+	text='White',
+	size=1,
+	value=RA8875_WHITE
+	)
+
+ft2 = Toggle(
+	text='Green',
+	size=1,
+	value=RA8875_GREEN
+	)
+
+ft3 = Toggle(
+	text='Yellow',
+	size=1,
+	value=RA8875_YELLOW
+	)
+
+fg_lbox = Listbox(
+	value=main_screen.fg_color(),
+	controls=[ft1,ft2,ft3]
+	)
+
+fg_lbox.onChange(main_screen.fg_color)
+fg_lbox.onChangeArgs(['_value'])
+
+fg_grid = Grid(
+	rows=1,
+	cols=2,
+	w=700,
+	h=200,
+	controls=[fg_lbl,fg_lbox])
+
+bg_lbl = Label(
+	text='Background: ',
+	size=1
+	)
+
+bt1 = Toggle(
+	text='Black',
+	size=1,
+	value=RA8875_BLACK
+	)
+
+bt2 = Toggle(
+	text='Red',
+	size=1,
+	value=RA8875_RED
+	)
+
+bt3 = Toggle(
+	text='Blue',
+	size=1,
+	value=RA8875_BLUE
+	)
+
+bg_lbox = Listbox(
+	value=main_screen.bg_color(),
+	controls=[bt1,bt2,bt3]
+	)
+
+bg_lbox.onChange(main_screen.bg_color)
+bg_lbox.onChangeArgs(['_value'])
+
+bg_grid = Grid(
+	rows=1,
+	cols=2,
+	w=700,
+	h=200,
+	controls=[bg_lbl,bg_lbox])
+
+lbl.center()
+lbl.top()
+
+fg_grid.center()
+fg_grid.top(25)
+
+bg_grid.center()
+bg_grid.top(250)
+
+exit_btn = Button(
+	text='EXIT',
+	size=0,
+	h=30,
+	padding=5,
+	onTap=main_screen.active,
+	onTapArgs=[True]
+	)
+
+exit_btn.left()
+exit_btn.bottom()
+
 
 ####################################################
 
