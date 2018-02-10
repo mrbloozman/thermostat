@@ -296,6 +296,11 @@ class Grid(Control):
 				self._controls[i].w(int(self._w/self._cols))
 				self._controls[i].h(int(self._h/self._rows))
 
+				try:
+					self._controls[i].position()
+				except AttributeError:
+					pass
+
 	def left(self,x=None):
 		Control.left(self,x)
 		self.position()
@@ -435,8 +440,24 @@ class Input(Control):
 class Button(Input):
 	def __init__(self,**kwargs):
 		Input.__init__(self,**kwargs)
-		self._datatype = t_datatype.text
-		self._value = self._text	# button's value is its text
+		
+	def render(self):
+		if self._enabled:
+			bg_color = self.bg_color()
+		else:
+			bg_color = RA8875_BLACK		# probably will need a more clear disabled style i.e. gray, italic, strikethrough, etc
+		tft.graphicsMode()
+		tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
+		for b in range(self._border):
+			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
+		tft.textMode()
+		tft.textColor(self.fg_color(),bg_color)
+		# setting for center/middle of rect
+		tft.textSetCursor(self._x+int(self._w/2)-int(self.value_width()/2),self._y+int(self._h/2)-int(self.value_height()/2))
+		tft.textEnlarge(self._size)
+		tft.textWrite(str(self._text),0)
+		tft.graphicsMode()
+		self._onRender(*self.listArgs(*self._onRenderArgs))
 
 class Toggle(Button):
 	def __init__(self,**kwargs):
@@ -461,9 +482,11 @@ class Toggle(Button):
 		if s:
 			self._selected = bool(s)
 			self._onSelect(*self.listArgs(*self._onSelectArgs))
+			self.render()
 		elif s==False:
 			self._selected = s
 			self._onSelect(*self.listArgs(*self._onSelectArgs))
+			self.render()
 		return self._selected
 
 	def fg_color(self,fg_color=None):
@@ -638,9 +661,11 @@ class Listbox(Grid,Input):
 		self.value(self._value)
 
 	def value(self,val=None):
-		if val:
+		if val or val==0:
 			for t in self._controls:
-				if val != t.value():
+				if val == t.value():
+					t._selected=True
+				else:
 					t._selected=False
 		return Input.value(self,val)
 
@@ -972,7 +997,9 @@ msg_input = Input(
 	fg_color=RA8875_YELLOW,
 	border=0,
 	value='',
-	datatype=t_datatype.text
+	datatype=t_datatype.text,
+	onTap=menu_screen.active,
+	onTapArgs=[True]
 	)
 
 msg_input._onChange = msg_input.render
@@ -1015,7 +1042,7 @@ msg_input.x(400)
 toggles_screen.controls([msg_input,t1,t2])
 ####################################################
 lbl = Label(
-	text='Change main screen colors'
+	text='Change menu screen colors'
 	)
 
 fg_lbl = Label(
@@ -1026,28 +1053,32 @@ fg_lbl = Label(
 ft1 = Toggle(
 	text='White',
 	size=1,
-	value=RA8875_WHITE
+	value=RA8875_WHITE,
+	datatype=t_datatype.number
 	)
 
 ft2 = Toggle(
 	text='Green',
 	size=1,
-	value=RA8875_GREEN
+	value=RA8875_GREEN,
+	datatype=t_datatype.number
 	)
 
 ft3 = Toggle(
 	text='Yellow',
 	size=1,
-	value=RA8875_YELLOW
+	value=RA8875_YELLOW,
+	datatype=t_datatype.number
 	)
 
 fg_lbox = Listbox(
-	value=main_screen.fg_color(),
-	controls=[ft1,ft2,ft3]
+	value=menu_screen.fg_color(),
+	controls=[ft1,ft2,ft3],
+	datatype=t_datatype.number
 	)
 
-fg_lbox.onChange(main_screen.fg_color)
-fg_lbox.onChangeArgs(['_value'])
+fg_lbox._onChange=menu_screen.fg_color
+fg_lbox._onChangeArgs=['_value']
 
 fg_grid = Grid(
 	rows=1,
@@ -1064,28 +1095,32 @@ bg_lbl = Label(
 bt1 = Toggle(
 	text='Black',
 	size=1,
-	value=RA8875_BLACK
+	value=RA8875_BLACK,
+	datatype=t_datatype.number
 	)
 
 bt2 = Toggle(
 	text='Red',
 	size=1,
-	value=RA8875_RED
+	value=RA8875_RED,
+	datatype=t_datatype.number
 	)
 
 bt3 = Toggle(
 	text='Blue',
 	size=1,
-	value=RA8875_BLUE
+	value=RA8875_BLUE,
+	datatype=t_datatype.number
 	)
 
 bg_lbox = Listbox(
-	value=main_screen.bg_color(),
-	controls=[bt1,bt2,bt3]
+	value=menu_screen.bg_color(),
+	controls=[bt1,bt2,bt3],
+	datatype=t_datatype.number
 	)
 
-bg_lbox.onChange(main_screen.bg_color)
-bg_lbox.onChangeArgs(['_value'])
+bg_lbox._onChange=menu_screen.bg_color
+bg_lbox._onChangeArgs=['_value']
 
 bg_grid = Grid(
 	rows=1,
@@ -1104,16 +1139,18 @@ bg_grid.center()
 bg_grid.top(250)
 
 exit_btn = Button(
-	text='EXIT',
+	text='MENU',
 	size=0,
-	h=30,
-	padding=5,
-	onTap=main_screen.active,
+	h=75,
+	w=75,
+	onTap=menu_screen.active,
 	onTapArgs=[True]
 	)
 
-exit_btn.left()
-exit_btn.bottom()
+exit_btn.left(75)
+exit_btn.middle()
+
+listbox_screen.controls([lbl,fg_grid,bg_grid,exit_btn])
 
 
 ####################################################
