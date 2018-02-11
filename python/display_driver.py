@@ -30,7 +30,7 @@ class t_datatype(enum.Enum):
 class Control:
 	def __init__(self,**kwargs):
 		self._parent = kwargs['parent']
-		self._parent.controls().append(self)
+		self._parent.addControl(self)
 
 		try:
 			if len(self._parent.controls())==(self._parent._rows*self._parent._cols):
@@ -280,7 +280,7 @@ class Grid(Control):
 		# if 'controls' in kwargs:
 		# 	self._controls = kwargs['controls']
 		# else:
-		# 	self._controls = []
+		self._controls = []
 
 		# if 'fg_color' in kwargs:
 		# 	for c in self._controls:
@@ -295,12 +295,6 @@ class Grid(Control):
 		# 		c.border(kwargs['border'])
 
 		# self.position()
-
-	def controls(self,controls=None):
-		if controls:
-			self._controls=controls
-			self.position()
-		return self._controls
 
 	def position(self):
 		for r in range(self._rows):
@@ -340,6 +334,9 @@ class Grid(Control):
 		Control.bottom(self,y)
 		self.position()
 
+	def addControl(self,c):
+		self._controls.append(c)
+
 	def controls(self,cs=None):
 		if cs:
 			self._controls = cs
@@ -360,8 +357,6 @@ class Grid(Control):
 	
 class Input(Control):
 	def __init__(self,**kwargs):
-		Control.__init__(self,**kwargs)
-
 		if 'onChange' in kwargs:
 			self._onChange = kwargs['onChange']
 		else:
@@ -390,6 +385,8 @@ class Input(Control):
 			self._value = 0
 		else:
 			self._value = False
+
+		Control.__init__(self,**kwargs)
 
 	def datatype(self):
 		return self._datatype
@@ -521,7 +518,10 @@ class Toggle(Button):
 			return self._fg_color
 
 	def tapped(self,touchPoint):
-		s = self._selected
+		if self._selected:
+			s=True
+		else:
+			s=False
 		if Button.tapped(self,touchPoint):
 			self.selected(not s)
 
@@ -663,24 +663,24 @@ class Spinbox(Input):
 class Listbox(Grid,Input):
 	def __init__(self,**kwargs):
 		kwargs['cols']=1
-		if 'controls' in kwargs:
-			kwargs['rows']=len(kwargs['controls'])
-		else:
-			kwargs['rows']=0
+		if 'rows' in kwargs:
+			self._rows=kwargs['rows']
 
 		Grid.__init__(self,**kwargs)
 		Input.__init__(self,**kwargs)
 
-		for t in self._controls:
-			t._onTap = self.change
-			t._onTapArgs = [t._value]
-		self.value(self._value)
+	def addControl(self,t):
+		self._controls.append(t)
+		t._onTap = self.change
+		t._onTapArgs = [t._value]
 
 	def value(self,val=None):
+		# print val
 		if val or val==0:
 			for t in self._controls:
 				if val == t.value():
 					t._selected=True
+					# print val
 				else:
 					t._selected=False
 		return Input.value(self,val)
@@ -728,6 +728,9 @@ class Screen:
 		elif bg==0:
 			self._bg_color=0
 		return self._bg_color
+
+	def addControl(self,c):
+		self._controls.append(c)
 
 	def controls(self,controls=None):
 		if controls:
@@ -800,7 +803,7 @@ main_screen = Screen(
 
 menu_screen = Screen(
 		id=t_screen.menu,
-		fg_color=RA8875_CYAN,
+		fg_color=RA8875_WHITE,
 		bg_color=RA8875_BLACK
 		)
 
@@ -831,6 +834,15 @@ spinbox_screen = Screen(
 screens = [main_screen,menu_screen,buttons_screen,toggles_screen,listbox_screen,spinbox_screen]
 
 ####################################################
+btn = Button(
+		parent=main_screen,
+		onTap=menu_screen.active,
+		onTapArgs=[True],
+		w=tft.width()-1,
+		h=tft.height()-1,
+		border=0
+		)
+
 welcome_lbl = Label(
 		parent=main_screen,
 		text='Welcome to the RA8875 touchscreen demo!',
@@ -848,15 +860,6 @@ instruction_lbl = Label(
 
 instruction_lbl.left(10)
 instruction_lbl.top(50)
-
-btn = Button(
-		parent=main_screen,
-		onTap=menu_screen.active,
-		onTapArgs=[True],
-		w=tft.width()-1,
-		h=tft.height()-1,
-		border=0
-		)
 
 # main_screen.controls([btn,welcome_lbl,instruction_lbl])
 
@@ -944,15 +947,15 @@ red_grid = Grid(
 		onTapArgs=[True]
 		)
 
-red_grid.left(50)
-red_grid.middle()
-
 red_btn = Button(
 		parent=red_grid,
 		text='Red',
 		size=2,
 		onTap=buttons_screen.bg_color,
 		onTapArgs=[RA8875_RED])
+
+red_grid.left(50)
+red_grid.middle()
 
 green_grid = Grid(
 		parent=buttons_screen,
@@ -1111,6 +1114,7 @@ fg_lbl = Label(
 
 fg_lbox = Listbox(
 	parent=fg_grid,
+	rows=3,
 	value=menu_screen.fg_color(),
 	# controls=[ft1,ft2,ft3],
 	datatype=t_datatype.number
@@ -1161,6 +1165,7 @@ bg_lbl = Label(
 
 bg_lbox = Listbox(
 	parent=bg_grid,
+	rows=3,
 	value=menu_screen.bg_color(),
 	# controls=[bt1,bt2,bt3],
 	datatype=t_datatype.number
