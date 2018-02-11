@@ -29,6 +29,15 @@ class t_datatype(enum.Enum):
 # common class for all controls
 class Control:
 	def __init__(self,**kwargs):
+		self._parent = kwargs['parent']
+		self._parent.controls().append(self)
+
+		try:
+			if len(self._parent.controls())==(self._parent._rows*self._parent._cols):
+				self._parent.position()
+		except AttributeError:
+			pass
+
 		if 'onTap' in kwargs:
 			self._onTap = kwargs['onTap']
 		else:
@@ -57,12 +66,12 @@ class Control:
 		if 'fg_color' in kwargs:
 			self._fg_color = kwargs['fg_color']
 		else:
-			self._fg_color = RA8875_WHITE
+			self._fg_color = self._parent.fg_color()
 
 		if 'bg_color' in kwargs:
 			self._bg_color = kwargs['bg_color']
 		else:
-			self._bg_color = RA8875_BLACK
+			self._bg_color = self._parent.bg_color()
 
 		if 'text' in kwargs:
 			self._text = str(kwargs['text'])
@@ -268,24 +277,30 @@ class Grid(Control):
 		self._rows=int(kwargs['rows'])
 		self._cols=int(kwargs['cols'])
 
-		if 'controls' in kwargs:
-			self._controls = kwargs['controls']
-		else:
-			self._controls = []
+		# if 'controls' in kwargs:
+		# 	self._controls = kwargs['controls']
+		# else:
+		# 	self._controls = []
 
-		if 'fg_color' in kwargs:
-			for c in self._controls:
-				c.fg_color(kwargs['fg_color'])
+		# if 'fg_color' in kwargs:
+		# 	for c in self._controls:
+		# 		c.fg_color(kwargs['fg_color'])
 
-		if 'bg_color' in kwargs:
-			for c in self._controls:
-				c.bg_color(kwargs['bg_color'])
+		# if 'bg_color' in kwargs:
+		# 	for c in self._controls:
+		# 		c.bg_color(kwargs['bg_color'])
 
-		if 'border' in kwargs:
-			for c in self._controls:
-				c.border(kwargs['border'])
+		# if 'border' in kwargs:
+		# 	for c in self._controls:
+		# 		c.border(kwargs['border'])
 
-		self.position()
+		# self.position()
+
+	def controls(self,controls=None):
+		if controls:
+			self._controls=controls
+			self.position()
+		return self._controls
 
 	def position(self):
 		for r in range(self._rows):
@@ -506,8 +521,9 @@ class Toggle(Button):
 			return self._fg_color
 
 	def tapped(self,touchPoint):
+		s = self._selected
 		if Button.tapped(self,touchPoint):
-			self.selected(not self._selected)
+			self.selected(not s)
 
 # Spinbox is made up of a Label, an Input, and two Buttons
 class Spinbox(Input):
@@ -777,33 +793,46 @@ GPIO.setup(RA8875_INT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 ###############	screens ###############
 main_screen = Screen(
-		id=t_screen.main
+		id=t_screen.main,
+		fg_color=RA8875_YELLOW,
+		bg_color=RA8875_BLACK
 		)
 
 menu_screen = Screen(
-		id=t_screen.menu
+		id=t_screen.menu,
+		fg_color=RA8875_CYAN,
+		bg_color=RA8875_BLACK
 		)
 
 buttons_screen = Screen(
-		id=t_screen.buttons
+		id=t_screen.buttons,
+		fg_color=RA8875_WHITE,
+		bg_color=RA8875_BLACK
 		)
 
 toggles_screen = Screen(
-		id=t_screen.toggles
+		id=t_screen.toggles,
+		fg_color=RA8875_WHITE,
+		bg_color=RA8875_BLACK
 		)
 
 listbox_screen = Screen(
-		id=t_screen.listbox
+		id=t_screen.listbox,
+		fg_color=RA8875_WHITE,
+		bg_color=RA8875_BLACK
 		)
 
 spinbox_screen = Screen(
-		id=t_screen.spinbox
+		id=t_screen.spinbox,
+		fg_color=RA8875_WHITE,
+		bg_color=RA8875_BLACK
 		)
 
 screens = [main_screen,menu_screen,buttons_screen,toggles_screen,listbox_screen,spinbox_screen]
 
 ####################################################
 welcome_lbl = Label(
+		parent=main_screen,
 		text='Welcome to the RA8875 touchscreen demo!',
 		size=1
 		)
@@ -812,6 +841,7 @@ welcome_lbl.left(10)
 welcome_lbl.bottom(50)
 
 instruction_lbl = Label(
+		parent=main_screen,
 		text='Touch anywhere on the screen to continue...',
 		size=1
 		)
@@ -820,6 +850,7 @@ instruction_lbl.left(10)
 instruction_lbl.top(50)
 
 btn = Button(
+		parent=main_screen,
 		onTap=menu_screen.active,
 		onTapArgs=[True],
 		w=tft.width()-1,
@@ -827,48 +858,21 @@ btn = Button(
 		border=0
 		)
 
-main_screen.controls([btn,welcome_lbl,instruction_lbl])
+# main_screen.controls([btn,welcome_lbl,instruction_lbl])
 
 ####################################################
 heading_lbl = Label(
+		parent=menu_screen,
 		text='Choose wisely...',
-		size=1,
-		fg_color=RA8875_CYAN
+		size=1
 		)
 
 heading_lbl.center()
 heading_lbl.top(10)
 
-buttons_btn = Button(
-		size=2,
-		text='Buttons',
-		onTap=buttons_screen.active,
-		onTapArgs=[True]
-		)
-
-toggles_btn = Button(
-		size=2,
-		text='Toggles',
-		onTap=toggles_screen.active,
-		onTapArgs=[True]
-		)
-
-listbox_btn = Button(
-		size=2,
-		text='Listbox',
-		onTap=listbox_screen.active,
-		onTapArgs=[True]
-		)
-
-spinbox_btn = Button(
-		size=2,
-		text='Spinbox',
-		onTap=spinbox_screen.active,
-		onTapArgs=[True]
-		)
-
 choices_grid = Grid(
-		controls = [buttons_btn,toggles_btn,listbox_btn,spinbox_btn],
+		parent=menu_screen,
+		# controls = [buttons_btn,toggles_btn,listbox_btn,spinbox_btn],
 		rows=2,
 		cols=2,
 		w=700,
@@ -878,13 +882,46 @@ choices_grid = Grid(
 		border=4
 		)
 
+buttons_btn = Button(
+		parent=choices_grid,
+		size=2,
+		text='Buttons',
+		onTap=buttons_screen.active,
+		onTapArgs=[True]
+		)
+
+toggles_btn = Button(
+		parent=choices_grid,
+		size=2,
+		text='Toggles',
+		onTap=toggles_screen.active,
+		onTapArgs=[True]
+		)
+
+listbox_btn = Button(
+		parent=choices_grid,
+		size=2,
+		text='Listbox',
+		onTap=listbox_screen.active,
+		onTapArgs=[True]
+		)
+
+spinbox_btn = Button(
+		parent=choices_grid,
+		size=2,
+		text='Spinbox',
+		onTap=spinbox_screen.active,
+		onTapArgs=[True]
+		)
+
 choices_grid.center()
 choices_grid.bottom(430)
 
-menu_screen.controls([heading_lbl,choices_grid])
+# menu_screen.controls([heading_lbl,choices_grid])
 
 ####################################################
 heading_lbl = Label(
+		parent=buttons_screen,
 		text='Choose your favorite color...',
 		size=1,
 		border=2,
@@ -893,14 +930,9 @@ heading_lbl = Label(
 heading_lbl.top()
 heading_lbl.left()
 
-red_btn = Button(
-		text='Red',
-		size=2,
-		onTap=buttons_screen.bg_color,
-		onTapArgs=[RA8875_RED])
-
 red_grid = Grid(
-		controls=[red_btn],
+		parent=buttons_screen,
+		# controls=[red_btn],
 		rows=1,
 		cols=1,
 		h=150,
@@ -915,15 +947,16 @@ red_grid = Grid(
 red_grid.left(50)
 red_grid.middle()
 
-green_btn = Button(
-		text='Green',
+red_btn = Button(
+		parent=red_grid,
+		text='Red',
 		size=2,
-		border=5,
 		onTap=buttons_screen.bg_color,
-		onTapArgs=[RA8875_GREEN])
+		onTapArgs=[RA8875_RED])
 
 green_grid = Grid(
-		controls=[green_btn],
+		parent=buttons_screen,
+		# controls=[green_btn],
 		rows=1,
 		cols=1,
 		h=150,
@@ -934,18 +967,20 @@ green_grid = Grid(
 		onTapArgs=[True]
 		)
 
-green_grid.center()
-green_grid.middle()
-
-blue_btn = Button(
-		text='Blue',
+green_btn = Button(
+		parent=green_grid,
+		text='Green',
 		size=2,
 		border=5,
 		onTap=buttons_screen.bg_color,
-		onTapArgs=[RA8875_BLUE])
+		onTapArgs=[RA8875_GREEN])
+
+green_grid.center()
+green_grid.middle()
 
 blue_grid = Grid(
-		controls=[blue_btn],
+		parent=buttons_screen,
+		# controls=[blue_btn],
 		rows=1,
 		cols=1,
 		h=150,
@@ -956,10 +991,19 @@ blue_grid = Grid(
 		onTapArgs=[True]
 		)
 
+blue_btn = Button(
+		parent=blue_grid,
+		text='Blue',
+		size=2,
+		border=5,
+		onTap=buttons_screen.bg_color,
+		onTapArgs=[RA8875_BLUE])
+
 blue_grid.right(750)
 blue_grid.middle()
 
 warning_lbl = Label(
+		parent=buttons_screen,
 		text='I cannot be held responsible for poor color choices.',
 		size=0,
 		padding=10
@@ -969,6 +1013,7 @@ warning_lbl.center()
 warning_lbl.bottom()
 
 exit_btn = Button(
+		parent=buttons_screen,
 		text='EXIT',
 		size=3,
 		padding=25,
@@ -980,17 +1025,18 @@ exit_btn = Button(
 exit_btn.top()
 exit_btn.right()
 
-buttons_screen.controls([
-	heading_lbl,
-	red_grid,
-	green_grid,
-	blue_grid,
-	warning_lbl,
-	exit_btn
-	])
+# buttons_screen.controls([
+# 	heading_lbl,
+# 	red_grid,
+# 	green_grid,
+# 	blue_grid,
+# 	warning_lbl,
+# 	exit_btn
+# 	])
 
 ####################################################
 msg_input = Input(
+	parent=toggles_screen,
 	size=3,
 	w=375,
 	h=150,
@@ -1005,6 +1051,7 @@ msg_input = Input(
 msg_input._onChange = msg_input.render
 
 t1 = Toggle(
+	parent=toggles_screen,
 	text='Toggle me',
 	size=2,
 	fg_color=RA8875_YELLOW,
@@ -1015,6 +1062,7 @@ t1 = Toggle(
 	)
 
 t2 = Toggle(
+	parent=toggles_screen,
 	text='Me too',
 	size=2,
 	padding=50,
@@ -1039,18 +1087,37 @@ t2.top(250)
 msg_input.middle()
 msg_input.x(400)
 
-toggles_screen.controls([msg_input,t1,t2])
+# toggles_screen.controls([msg_input,t1,t2])
 ####################################################
 lbl = Label(
+	parent=listbox_screen,
 	text='Change menu screen colors'
 	)
 
+fg_grid = Grid(
+	parent=listbox_screen,
+	rows=1,
+	cols=2,
+	w=700,
+	h=200
+	# controls=[fg_lbl,fg_lbox]
+	)
+
 fg_lbl = Label(
+	parent=fg_grid,
 	text='Foreground: ',
 	size=1
 	)
 
+fg_lbox = Listbox(
+	parent=fg_grid,
+	value=menu_screen.fg_color(),
+	# controls=[ft1,ft2,ft3],
+	datatype=t_datatype.number
+	)
+
 ft1 = Toggle(
+	parent=fg_lbox,
 	text='White',
 	size=1,
 	value=RA8875_WHITE,
@@ -1058,6 +1125,7 @@ ft1 = Toggle(
 	)
 
 ft2 = Toggle(
+	parent=fg_lbox,
 	text='Green',
 	size=1,
 	value=RA8875_GREEN,
@@ -1065,34 +1133,41 @@ ft2 = Toggle(
 	)
 
 ft3 = Toggle(
+	parent=fg_lbox,
 	text='Yellow',
 	size=1,
 	value=RA8875_YELLOW,
 	datatype=t_datatype.number
 	)
 
-fg_lbox = Listbox(
-	value=menu_screen.fg_color(),
-	controls=[ft1,ft2,ft3],
-	datatype=t_datatype.number
-	)
-
 fg_lbox._onChange=menu_screen.fg_color
 fg_lbox._onChangeArgs=['_value']
 
-fg_grid = Grid(
+
+bg_grid = Grid(
+	parent=listbox_screen,
 	rows=1,
 	cols=2,
 	w=700,
-	h=200,
-	controls=[fg_lbl,fg_lbox])
+	h=200
+	# controls=[bg_lbl,bg_lbox]
+	)
 
 bg_lbl = Label(
+	parent=bg_grid,
 	text='Background: ',
 	size=1
 	)
 
+bg_lbox = Listbox(
+	parent=bg_grid,
+	value=menu_screen.bg_color(),
+	# controls=[bt1,bt2,bt3],
+	datatype=t_datatype.number
+	)
+
 bt1 = Toggle(
+	parent=bg_lbox,
 	text='Black',
 	size=1,
 	value=RA8875_BLACK,
@@ -1100,6 +1175,7 @@ bt1 = Toggle(
 	)
 
 bt2 = Toggle(
+	parent=bg_lbox,
 	text='Red',
 	size=1,
 	value=RA8875_RED,
@@ -1107,27 +1183,15 @@ bt2 = Toggle(
 	)
 
 bt3 = Toggle(
+	parent=bg_lbox,
 	text='Blue',
 	size=1,
 	value=RA8875_BLUE,
 	datatype=t_datatype.number
 	)
 
-bg_lbox = Listbox(
-	value=menu_screen.bg_color(),
-	controls=[bt1,bt2,bt3],
-	datatype=t_datatype.number
-	)
-
 bg_lbox._onChange=menu_screen.bg_color
 bg_lbox._onChangeArgs=['_value']
-
-bg_grid = Grid(
-	rows=1,
-	cols=2,
-	w=700,
-	h=200,
-	controls=[bg_lbl,bg_lbox])
 
 lbl.center()
 lbl.top()
@@ -1139,6 +1203,7 @@ bg_grid.center()
 bg_grid.top(250)
 
 exit_btn = Button(
+	parent=listbox_screen,
 	text='MENU',
 	size=0,
 	h=75,
@@ -1150,7 +1215,7 @@ exit_btn = Button(
 exit_btn.left(75)
 exit_btn.middle()
 
-listbox_screen.controls([lbl,fg_grid,bg_grid,exit_btn])
+# listbox_screen.controls([lbl,fg_grid,bg_grid,exit_btn])
 
 
 ####################################################
