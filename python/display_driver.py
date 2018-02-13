@@ -6,6 +6,10 @@ import CHIP_IO.GPIO as GPIO
 import CHIP_IO.OverlayManager as OM
 import enum
 
+def debug(obj):
+	for k in vars(obj).keys():
+		print k + ': ' + str(vars(obj)[k])
+
 OM.load('SPI2')
 
 RA8875_INT = 'XIO-P1'
@@ -30,14 +34,7 @@ class t_datatype(enum.Enum):
 class Control:
 	def __init__(self,**kwargs):
 		self._parent = kwargs['parent']
-		self._parent.addControl(self)
-
-		try:
-			if len(self._parent.controls())==(self._parent._rows*self._parent._cols):
-				self._parent.position()
-		except AttributeError:
-			pass
-
+		
 		if 'onTap' in kwargs:
 			self._onTap = kwargs['onTap']
 		else:
@@ -107,6 +104,15 @@ class Control:
 			self.padding(int(kwargs['padding']))
 		else:
 			self.padding(0)
+
+
+		self._parent.addControl(self)
+
+		try:
+			if len(self._parent.controls())==(self._parent._rows*self._parent._cols):
+				self._parent.position()
+		except AttributeError:
+			pass
 
 	def padding(self,p):
 		if p:
@@ -524,6 +530,7 @@ class Toggle(Button):
 			s=False
 		if Button.tapped(self,touchPoint):
 			self.selected(not s)
+			# debug(self)
 
 # Spinbox is made up of a Label, an Input, and two Buttons
 class Spinbox(Input):
@@ -659,6 +666,13 @@ class Spinbox(Input):
 		self._dnBtn.tapped(touchPoint)
 		return Input.tapped(self,touchPoint)
 
+class ListboxItem(Toggle):
+	def __init__(self,**kwargs):
+		Toggle.__init__(self,**kwargs)
+
+	def tapped(self,touchPoint):
+		return Button.tapped(self,touchPoint)
+
 # Listbox is a container for Toggle instances - toggles callbacks will be overwritten to control the listbox value
 class Listbox(Grid,Input):
 	def __init__(self,**kwargs):
@@ -671,8 +685,10 @@ class Listbox(Grid,Input):
 
 	def addControl(self,t):
 		self._controls.append(t)
-		t._onTap = self.change
-		t._onTapArgs = [t._value]
+		i = len(self._controls)-1
+		self.controls()[i]._onTap = self.change
+		self.controls()[i]._onTapArgs = ['_value']
+		# debug(self.controls()[i])
 
 	def value(self,val=None):
 		# print val
@@ -1115,12 +1131,12 @@ fg_lbl = Label(
 fg_lbox = Listbox(
 	parent=fg_grid,
 	rows=3,
-	value=menu_screen.fg_color(),
+	# value=menu_screen.fg_color(),
 	# controls=[ft1,ft2,ft3],
 	datatype=t_datatype.number
 	)
 
-ft1 = Toggle(
+ft1 = ListboxItem(
 	parent=fg_lbox,
 	text='White',
 	size=1,
@@ -1128,7 +1144,7 @@ ft1 = Toggle(
 	datatype=t_datatype.number
 	)
 
-ft2 = Toggle(
+ft2 = ListboxItem(
 	parent=fg_lbox,
 	text='Green',
 	size=1,
@@ -1136,7 +1152,7 @@ ft2 = Toggle(
 	datatype=t_datatype.number
 	)
 
-ft3 = Toggle(
+ft3 = ListboxItem(
 	parent=fg_lbox,
 	text='Yellow',
 	size=1,
@@ -1144,8 +1160,12 @@ ft3 = Toggle(
 	datatype=t_datatype.number
 	)
 
+fg_lbox.value(menu_screen.fg_color())
 fg_lbox._onChange=menu_screen.fg_color
 fg_lbox._onChangeArgs=['_value']
+
+debug(fg_lbox)
+debug(fg_lbox.controls()[0])
 
 
 bg_grid = Grid(
@@ -1166,12 +1186,12 @@ bg_lbl = Label(
 bg_lbox = Listbox(
 	parent=bg_grid,
 	rows=3,
-	value=menu_screen.bg_color(),
+	# value=menu_screen.bg_color(),
 	# controls=[bt1,bt2,bt3],
 	datatype=t_datatype.number
 	)
 
-bt1 = Toggle(
+bt1 = ListboxItem(
 	parent=bg_lbox,
 	text='Black',
 	size=1,
@@ -1179,7 +1199,7 @@ bt1 = Toggle(
 	datatype=t_datatype.number
 	)
 
-bt2 = Toggle(
+bt2 = ListboxItem(
 	parent=bg_lbox,
 	text='Red',
 	size=1,
@@ -1187,7 +1207,7 @@ bt2 = Toggle(
 	datatype=t_datatype.number
 	)
 
-bt3 = Toggle(
+bt3 = ListboxItem(
 	parent=bg_lbox,
 	text='Blue',
 	size=1,
@@ -1195,6 +1215,7 @@ bt3 = Toggle(
 	datatype=t_datatype.number
 	)
 
+bg_lbox.value(menu_screen.bg_color())
 bg_lbox._onChange=menu_screen.bg_color
 bg_lbox._onChangeArgs=['_value']
 
