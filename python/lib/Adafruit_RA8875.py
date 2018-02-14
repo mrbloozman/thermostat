@@ -381,10 +381,10 @@ class Adafruit_RA8875(GFX):
 		self.writeReg(RA8875_CURV1, y >> 8)  
 		self.writeCommand(RA8875_MRWC)
 		# digitalWrite(_cs, LOW)
-		# GPIO.output(self._cs, GPIO.LOW)
+		GPIO.output(self._cs, GPIO.LOW)
 		self.spi.xfer2([RA8875_DATAWRITE,(color >> 8),color])
 		# digitalWrite(_cs, HIGH)
-		# GPIO.output(self._cs, GPIO.HIGH)
+		GPIO.output(self._cs, GPIO.HIGH)
 
 ######################################################################
 # Draws a HW accelerated line on the display
