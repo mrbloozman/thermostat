@@ -1,3 +1,129 @@
+class NetPBM:
+   def __init__(self):
+      self._magicNumber = None
+      self._comment = None
+      self._width = None
+      self._height = None
+      self._maxColor = None
+      self._src = []
+      self._colorMap = []
+
+   def load(self,filepath):
+      with open(filepath,'rb') as f:
+         for ln in f:
+            if not self._magicNumber:
+               if ln.replace('\n','') in ['P1','P2','P3','P4','P5','P6']:
+                  self._magicNumber = ln.replace('\n','')
+               else:
+                  raise IOError('NetPBM: Could not determine magic number')
+            elif ln[0]=='#':
+               # print ln
+               if not self._comment:
+                  self._comment = ln
+               else:
+                  self._comment = self._comment + ln
+            elif not self._width:
+               props = ln.split()
+               if len(props) >= 2:
+                  self._width = int(props[0])
+                  self._height = int(props[1])
+               if len(props) == 3:
+                  self._maxColor = int(props[2])
+            elif not self._maxColor and self.maxColorRequired():
+               props = ln.split()
+               if len(props) == 1:
+                  self._maxColor = int(props[0])
+               else:
+                  raise IOError('NetPBM: Could not find max color')
+            elif self.isBitMap():
+               self.srcBitMap(ln)
+            elif self.isGrayMap():
+               self.srcGrayMap(ln)
+
+      self.validate()
+
+   def srcBitMap(self,ln):
+      if self._colorMap == []:
+         self._colorMap = {0:0xffffff,1:0x000000}
+      if self.isAscii():
+         for px in ln.strip().split():
+            if px in ['0','1']:
+               self._src.append(int(px))
+      elif self.isBinary():
+         for px in ln.bytes():
+            for i in range(8):
+               self._src.append(px&(1<<i))
+
+   def srcGrayMap(self,ln):
+      if self._colorMap == []:
+         self._colorMap = {0:0xffffff}
+         self._colorMap[self._maxColor] = 0x000000
+      if self.isAscii():
+         for px in ln.strip().split():
+            try:
+               ipx = int(px)
+               if ipx not in self._colorMap:
+                  self._colorMap[ipx] = self.normalizeRGB(ipx,ipx,ipx)
+               self._src.append(ipx)
+            except ValueError as e:
+               pass
+      elif self.isBinary():
+         for ipx in ln.bytes():
+            if ipx not in self._colorMap:
+               self._colorMap[ipx] = self.normalizeRGB(ipx,ipx,ipx)
+            self._src.append(ipx)
+
+   def normalizeRGB(self,r,g,b):
+      return (self.normalizeColor(r)<<16)+(self.normalizeColor(g)<<8)+self.normalizeColor(b)
+
+   def normalizeColor(self,c):
+      return 255-int(255*c/self._maxColor)
+
+   def validate(self):
+      if (self._width * self._height) != len(self._src):
+         raise IOError('NetPBM: Load is not valid')
+                  
+
+   def maxColorRequired(self):
+      if self._magicNumber in ['P2','P3','P5','P6']:
+         return True
+      else:
+         return False
+
+   def isAscii(self):
+      if self._magicNumber in ['P1','P2','P3']:
+         return True
+      else:
+         return False
+
+   def isBinary(self):
+      if self._magicNumber in ['P4','P5','P6']:
+         return True
+      else:
+         return False
+
+   def isBitMap(self):
+      if self._magicNumber in ['P1','P4']:
+         return True
+      else:
+         return False
+
+   def isGrayMap(self):
+      if self._magicNumber in ['P2','P5']:
+         return True
+      else:
+         return False
+
+   def isPixMap(self):
+      if self._magicNumber in ['P3','P6']:
+         return True
+      else:
+         return False
+
+img = NetPBM()
+img.load('static/img/example.pgm')
+print vars(img)
+
 fan3=[0x00, 0x3c, 0x00, 0x00, 0x80, 0x7f, 0x00, 0x00, 0xe0, 0xff, 0x00, 0x00,
    0xf0, 0xff, 0xe0, 0x07, 0xf0, 0xff, 0xf0, 0x1f, 0xf8, 0xff, 0xf8, 0x3f,
    0xf8, 0x7f, 0xfc, 0x3f, 0xf8, 0x7f, 0xfc, 0x7f, 0xf8, 0x7f, 0xfc, 0x7f,
