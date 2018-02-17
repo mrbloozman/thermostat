@@ -728,7 +728,10 @@ class Image(Control):
 		tft.fillRect(self._x,self._y,self._w,self._h,self.bg_color())
 		for b in range(self._border):
 			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
-		tft.drawBitmap(self._x,self._y,self._src,self._w,self._h,self.fg_color())
+		for r in range(self._h):
+			for c in range(self._w):
+				tft.drawPixel(self._x+c,self._y+r,self._src[(r*self._w)+c])
+		# tft.drawBitmap(self._x,self._y,self._src,self._w,self._h,self.fg_color())
 		self._onRender(*self.listArgs(*self._onRenderArgs))
 
 # Common class for screens
@@ -1283,12 +1286,15 @@ lbl = Label(
 lbl.center()
 lbl.top()
 
+goblin_img = NetPBM()
+goblin_img.load('static/img/Goblin.ppm')
+
 img = Image(
 	parent=image_screen,
 	border=1,
-	w=48,
-	h=48,
-	src=bitSwapList([jedi])[0],
+	w=goblin_img._width,
+	h=goblin_img._height,
+	src=goblin_img.export(),
    onTap=menu_screen.active,
    onTapArgs=[True]
    )
