@@ -57,7 +57,7 @@ class NetPBM:
             self.setColorMap565bit()
 
 
-         print vars(self)
+         # print vars(self)
          self.validate()
 
    def readLine(self,f):
@@ -181,7 +181,8 @@ class NetPBM:
 
    def normalizeColor(self,c,bits):
       size = (1<<bits)-1
-      return size-int(size*c/self._maxColor)
+      # return size-int(size*c/self._maxColor)
+      return int(size*c/self._maxColor)
 
    def validate(self):
       if (self._width * self._height) != len(self._src):

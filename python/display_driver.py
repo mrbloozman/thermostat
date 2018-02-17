@@ -729,9 +729,20 @@ class Image(Control):
 		for b in range(self._border):
 			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
 		for r in range(self._h):
+			line = []
+			tft.setXY(self._x,self._y+r)
+			tft.writeCommand(RA8875_MRWC)
 			for c in range(self._w):
-				tft.drawPixel(self._x+c,self._y+r,self._src[(r*self._w)+c])
-		# tft.drawBitmap(self._x,self._y,self._src,self._w,self._h,self.fg_color())
+				px = self._src[(r*self._w)+c]
+				if px == 0xFFFF:
+					px = self.bg_color()
+				line.append((px >> 8))
+				line.append(px)
+				# tft.drawPixel(self._x+c,self._y+r,self._src[(r*self._w)+c])
+			# tft.pushPixels(self._w,0)
+			GPIO.output(tft._cs, GPIO.LOW)
+			tft.spi.xfer2([RA8875_DATAWRITE]+line)
+			GPIO.output(tft._cs, GPIO.HIGH)
 		self._onRender(*self.listArgs(*self._onRenderArgs))
 
 # Common class for screens
@@ -1291,7 +1302,7 @@ goblin_img.load('static/img/Goblin.ppm')
 
 img = Image(
 	parent=image_screen,
-	border=1,
+	border=0,
 	w=goblin_img._width,
 	h=goblin_img._height,
 	src=goblin_img.export(),
@@ -1302,7 +1313,7 @@ img = Image(
 img.center()
 img.middle()
 
-debug(img)
+# debug(img)
 
 ####################################################
 

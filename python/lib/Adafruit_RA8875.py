@@ -63,7 +63,8 @@ class Adafruit_RA8875(GFX):
 
 		self.spi = spidev.SpiDev()
 		self.spi.open(32766, 0)
-		self.spi.max_speed_hz = 125000
+		# self.spi.max_speed_hz = 125000
+		self.spi.max_speed_hz = 2000000
 		self.spi.mode = 0b00
 		# self.spi.cshigh = False
 		# self.spi.lsbfirst = False
@@ -349,13 +350,13 @@ class Adafruit_RA8875(GFX):
 
 	def pushPixels(self, num, p):
 		# digitalWrite(_cs, LOW);
-		# GPIO.output(self._cs, GPIO.LOW)
+		GPIO.output(self._cs, GPIO.LOW)
 		self.spi.xfer2([RA8875_DATAWRITE])
 		while num > 0:
 			self.spi.xfer2([(p >> 8),p])
 			num = num-1
 		# digitalWrite(_cs, HIGH);
-		# GPIO.output(self._cs, GPIO.HIGH)
+		GPIO.output(self._cs, GPIO.HIGH)
 
 ######################################################################
 
@@ -375,10 +376,11 @@ class Adafruit_RA8875(GFX):
 ######################################################################
 
 	def drawPixel(self, x, y, color):
-		self.writeReg(RA8875_CURH0, x)
-		self.writeReg(RA8875_CURH1, x >> 8)
-		self.writeReg(RA8875_CURV0, y)
-		self.writeReg(RA8875_CURV1, y >> 8)  
+		# self.writeReg(RA8875_CURH0, x)
+		# self.writeReg(RA8875_CURH1, x >> 8)
+		# self.writeReg(RA8875_CURV0, y)
+		# self.writeReg(RA8875_CURV1, y >> 8) 
+		self.setXY(x,y) 
 		self.writeCommand(RA8875_MRWC)
 		# digitalWrite(_cs, LOW)
 		GPIO.output(self._cs, GPIO.LOW)
