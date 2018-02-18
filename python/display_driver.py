@@ -1332,21 +1332,40 @@ lbl = Label(
 lbl.center()
 lbl.top()
 
-goblin_img = NetPBM()
-goblin_img.load('static/img/Goblin.ppm')
+# goblin_img = NetPBM()
+# goblin_img.load('static/img/Goblin.ppm')
 
-img = Image(
+jedi_img = NetPBM()
+jedi_img.load('static/img/jedi-256x256.pgm')
+
+makey_img = NetPBM()
+makey_img.load('static/img/makey-190x200.ppm')
+
+img1 = Image(
 	parent=image_screen,
 	border=0,
-	w=goblin_img._width,
-	h=goblin_img._height,
-	src=goblin_img.export(),
+	w=jedi_img._width,
+	h=jedi_img._height,
+	src=jedi_img.export(),
    onTap=menu_screen.active,
    onTapArgs=[True]
    )
 
-img.center()
-img.middle()
+img2 = Image(
+	parent=image_screen,
+	border=0,
+	w=makey_img._width,
+	h=makey_img._height,
+	src=makey_img.export(),
+   onTap=menu_screen.active,
+   onTapArgs=[True]
+   )
+
+img1.left(50)
+img1.middle()
+
+img2.right(50)
+img2.middle()
 
 # debug(img)
 
