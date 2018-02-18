@@ -718,6 +718,18 @@ class Image(Control):
 		else:
 			self._src = []
 
+		if 'transparent' in kwargs:
+			self._transparent = bool(kwargs['transparent'])
+		else:
+			self._transparent = False
+
+	def transparent(self,t=None):
+		if t:
+			self._transparent = bool(t)
+		elif t==False:
+			self._transparent = False
+		return self._transparent
+
 	def src(self,s=None):
 		if s:
 			self._src = s
@@ -760,6 +772,8 @@ class Image(Control):
 
 		mem = []
 		for px in self._src:
+			if self._transparent and (px==0xFFFF):
+				px = self.bg_color()
 			mem.append((px >> 8))
 			mem.append(px)
 
@@ -924,8 +938,8 @@ spinbox_screen = Screen(
 
 image_screen = Screen(
 		id=t_screen.image,
-		fg_color=RA8875_BLACK,
-		bg_color=RA8875_YELLOW
+		fg_color=RA8875_YELLOW,
+		bg_color=RA8875_BLACK
 		)
 
 screens = [main_screen,menu_screen,buttons_screen,toggles_screen,listbox_screen,spinbox_screen,image_screen]
@@ -1337,28 +1351,22 @@ lbl.top()
 # goblin_img = NetPBM()
 # goblin_img.load('static/img/Goblin.ppm')
 
-jedi_img = NetPBM()
-jedi_img.load('static/img/jedi-256x256.pgm')
+# jedi_img = NetPBM()
+# jedi_img.load('static/img/jedi-256x256.pgm')
 
 makey_img = NetPBM()
 makey_img.load('static/img/makey-190x200.ppm')
 
+flame_img = NetPBM()
+flame_img.load('static/img/flame-290x400.ppm')
+
 img1 = Image(
 	parent=image_screen,
 	border=0,
-	w=jedi_img._width,
-	h=jedi_img._height,
-	src=jedi_img.export(),
-   onTap=menu_screen.active,
-   onTapArgs=[True]
-   )
-
-img2 = Image(
-	parent=image_screen,
-	border=0,
-	w=makey_img._width,
-	h=makey_img._height,
-	src=makey_img.export(),
+	w=flame_img._width,
+	h=flame_img._height,
+	src=flame_img.export(),
+	transparent=True,
    onTap=menu_screen.active,
    onTapArgs=[True]
    )
@@ -1366,7 +1374,18 @@ img2 = Image(
 img1.left(50)
 img1.middle()
 
-img2.right(50)
+img2 = Image(
+	parent=image_screen,
+	border=0,
+	w=makey_img._width,
+	h=makey_img._height,
+	src=makey_img.export(),
+	transparent=True,
+   onTap=menu_screen.active,
+   onTapArgs=[True]
+   )
+
+img2.right(750)
 img2.middle()
 
 # debug(img)

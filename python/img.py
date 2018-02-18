@@ -118,7 +118,8 @@ class NetPBM:
          bytewidth = self._width
          row = f.read(bytewidth)
          while len(row) > 0:
-            for ipx in row:
+            for px in row:
+               ipx = ord(px)
                if ipx not in self._colorMap:
                   self._colorMap[ipx] = 0
                self._src.append(ipx)
