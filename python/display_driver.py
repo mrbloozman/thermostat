@@ -728,21 +728,56 @@ class Image(Control):
 		tft.fillRect(self._x,self._y,self._w,self._h,self.bg_color())
 		for b in range(self._border):
 			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
-		for r in range(self._h):
-			line = []
-			tft.setXY(self._x,self._y+r)
-			tft.writeCommand(RA8875_MRWC)
-			for c in range(self._w):
-				px = self._src[(r*self._w)+c]
-				if px == 0xFFFF:
-					px = self.bg_color()
-				line.append((px >> 8))
-				line.append(px)
-				# tft.drawPixel(self._x+c,self._y+r,self._src[(r*self._w)+c])
-			# tft.pushPixels(self._w,0)
-			GPIO.output(tft._cs, GPIO.LOW)
-			tft.spi.xfer2([RA8875_DATAWRITE]+line)
-			GPIO.output(tft._cs, GPIO.HIGH)
+		# for r in range(self._h):
+		# 	line = []
+		# 	tft.setXY(self._x,self._y+r)
+		# 	tft.writeCommand(RA8875_MRWC)
+		# 	for c in range(self._w):
+		# 		px = self._src[(r*self._w)+c]
+		# 		if px == 0xFFFF:
+		# 			px = self.bg_color()
+		# 		line.append((px >> 8))
+		# 		line.append(px)
+
+		# 	GPIO.output(tft._cs, GPIO.LOW)
+		# 	tft.spi.xfer2([RA8875_DATAWRITE]+line)
+		# 	GPIO.output(tft._cs, GPIO.HIGH)
+
+		# Set active window X 
+		tft.writeReg(RA8875_HSAW0, 0)                                        # horizontal start point
+		tft.writeReg(RA8875_HSAW1, 0)
+		tft.writeReg(RA8875_HEAW0, (self._w - 1) & 0xFF)            # horizontal end point
+		tft.writeReg(RA8875_HEAW1, (self._w - 1) >> 8)
+
+		# Set active window Y 
+		tft.writeReg(RA8875_VSAW0, 0)                                        # vertical start point
+		tft.writeReg(RA8875_VSAW1, 0)  
+		tft.writeReg(RA8875_VEAW0, (self._h - 1) & 0xFF)           # horizontal end point
+		tft.writeReg(RA8875_VEAW1, (self._h - 1) >> 8)
+
+		tft.setXY(self._x,self._y)
+		tft.writeCommand(RA8875_MRWC)
+
+		mem = []
+		for px in self._src:
+			mem.append((px >> 8))
+			mem.append(px)
+		GPIO.output(tft._cs, GPIO.LOW)
+		tft.spi.xfer2([RA8875_DATAWRITE]+mem)
+		GPIO.output(tft._cs, GPIO.HIGH)
+
+		# Set active window X 
+		tft.writeReg(RA8875_HSAW0, 0)                                        # horizontal start point
+		tft.writeReg(RA8875_HSAW1, 0)
+		tft.writeReg(RA8875_HEAW0, (tft.width() - 1) & 0xFF)            # horizontal end point
+		tft.writeReg(RA8875_HEAW1, (tft.width() - 1) >> 8)
+
+		# Set active window Y 
+		tft.writeReg(RA8875_VSAW0, 0)                                        # vertical start point
+		tft.writeReg(RA8875_VSAW1, 0)  
+		tft.writeReg(RA8875_VEAW0, (tft.height() - 1) & 0xFF)           # horizontal end point
+		tft.writeReg(RA8875_VEAW1, (tft.height() - 1) >> 8)
+
 		self._onRender(*self.listArgs(*self._onRenderArgs))
 
 # Common class for screens
