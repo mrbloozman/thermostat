@@ -744,16 +744,16 @@ class Image(Control):
 		# 	GPIO.output(tft._cs, GPIO.HIGH)
 
 		# Set active window X 
-		tft.writeReg(RA8875_HSAW0, 0)                                        # horizontal start point
-		tft.writeReg(RA8875_HSAW1, 0)
-		tft.writeReg(RA8875_HEAW0, (self._w - 1) & 0xFF)            # horizontal end point
-		tft.writeReg(RA8875_HEAW1, (self._w - 1) >> 8)
+		tft.writeReg(RA8875_HSAW0, (self._x & 0xFF))                                        # horizontal start point
+		tft.writeReg(RA8875_HSAW1, (self._x >> 8))
+		tft.writeReg(RA8875_HEAW0, (self._x+self._w - 1) & 0xFF)            # horizontal end point
+		tft.writeReg(RA8875_HEAW1, (self._x+self._w - 1) >> 8)
 
 		# Set active window Y 
-		tft.writeReg(RA8875_VSAW0, 0)                                        # vertical start point
-		tft.writeReg(RA8875_VSAW1, 0)  
-		tft.writeReg(RA8875_VEAW0, (self._h - 1) & 0xFF)           # horizontal end point
-		tft.writeReg(RA8875_VEAW1, (self._h - 1) >> 8)
+		tft.writeReg(RA8875_VSAW0, (self._y & 0xFF))                                        # vertical start point
+		tft.writeReg(RA8875_VSAW1, (self._y >> 8))  
+		tft.writeReg(RA8875_VEAW0, (self._y+self._h - 1) & 0xFF)           # horizontal end point
+		tft.writeReg(RA8875_VEAW1, (self._y+self._h - 1) >> 8)
 
 		tft.setXY(self._x,self._y)
 		tft.writeCommand(RA8875_MRWC)
@@ -762,9 +762,11 @@ class Image(Control):
 		for px in self._src:
 			mem.append((px >> 8))
 			mem.append(px)
-		GPIO.output(tft._cs, GPIO.LOW)
-		tft.spi.xfer2([RA8875_DATAWRITE]+mem)
-		GPIO.output(tft._cs, GPIO.HIGH)
+
+		for i in xrange(0,len(mem),4095):
+			GPIO.output(tft._cs, GPIO.LOW)
+			tft.spi.xfer2([RA8875_DATAWRITE]+mem[i:i+4095])
+			GPIO.output(tft._cs, GPIO.HIGH)
 
 		# Set active window X 
 		tft.writeReg(RA8875_HSAW0, 0)                                        # horizontal start point
