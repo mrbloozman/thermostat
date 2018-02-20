@@ -4,7 +4,6 @@ from Adafruit_RA8875 import *
 from time import sleep
 import CHIP_IO.GPIO as GPIO
 import CHIP_IO.OverlayManager as OM
-import enum
 from img import *
 import datetime
 from mrbloozman_RA8875 import *
@@ -12,6 +11,17 @@ from mrbloozman_RA8875 import *
 def debug(obj):
 	for k in vars(obj).keys():
 		print k + ': ' + str(vars(obj)[k])
+
+class Clock(Input):
+	def __init__(self,**kwargs):
+		Input.__init__(self,**kwargs)
+		self._nextUpdate=datetime.datetime.now()
+
+	def update(self):
+		dt = datetime.datetime.now()
+		if dt >= self._nextUpdate:
+			self.change(datetime.datetime.now().strftime("%B %d, %Y %H:%M:%S%z"))
+			self._nextUpdate = dt+datetime.timedelta(seconds=1)
 
 OM.load('SPI2')
 
@@ -35,46 +45,54 @@ tft.touchEnable(True)
 
 GPIO.setup(RA8875_INT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+app = TouchDisplay(intPin=RA8875_INT,tft=tft)
 
 
 ###############	screens ###############
 main_screen = Screen(
+		parent=app,
 		id=t_screen.main,
 		fg_color=RA8875_YELLOW,
 		bg_color=RA8875_BLACK
 		)
 
 menu_screen = Screen(
+		parent=app,
 		id=t_screen.menu,
 		fg_color=RA8875_WHITE,
 		bg_color=RA8875_BLACK
 		)
 
 buttons_screen = Screen(
+		parent=app,
 		id=t_screen.buttons,
 		fg_color=RA8875_WHITE,
 		bg_color=RA8875_BLACK
 		)
 
 toggles_screen = Screen(
+		parent=app,
 		id=t_screen.toggles,
 		fg_color=RA8875_WHITE,
 		bg_color=RA8875_BLACK
 		)
 
 listbox_screen = Screen(
+		parent=app,
 		id=t_screen.listbox,
 		fg_color=RA8875_WHITE,
 		bg_color=RA8875_BLACK
 		)
 
 spinbox_screen = Screen(
+		parent=app,
 		id=t_screen.spinbox,
 		fg_color=RA8875_WHITE,
 		bg_color=RA8875_BLACK
 		)
 
 image_screen = Screen(
+		parent=app,
 		id=t_screen.image,
 		fg_color=RA8875_YELLOW,
 		bg_color=RA8875_BLACK
@@ -550,14 +568,14 @@ img2.middle()
 
 main_screen.active(True)
 
-app = TouchDisplay(intPin=RA8875_INT,tft=tft)
-app.addScreen(main_screen)
-app.addScreen(menu_screen)
-app.addScreen(buttons_screen)
-app.addScreen(toggles_screen)
-app.addScreen(listbox_screen)
-app.addScreen(spinbox_screen)
-app.addScreen(image_screen]
+
+# app.addScreen(main_screen)
+# app.addScreen(menu_screen)
+# app.addScreen(buttons_screen)
+# app.addScreen(toggles_screen)
+# app.addScreen(listbox_screen)
+# app.addScreen(spinbox_screen)
+# app.addScreen(image_screen)
 
 app.run()
 

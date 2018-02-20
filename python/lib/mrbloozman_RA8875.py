@@ -1,4 +1,6 @@
 import CHIP_IO.GPIO as GPIO
+from Adafruit_RA8875 import *
+import enum
 
 class t_screen(enum.Enum):
 	main = 0
@@ -19,6 +21,11 @@ class t_datatype(enum.Enum):
 class Control:
 	def __init__(self,**kwargs):
 		self._parent = kwargs['parent']
+
+		tftSearch = self._parent
+		while '_tft' not in vars(tftSearch):
+			tftSearch = tftSearch._parent
+		self._tft = tftSearch._tft
 		
 		if 'onTap' in kwargs:
 			self._onTap = kwargs['onTap']
@@ -185,14 +192,14 @@ class Control:
 		if x:
 			x = int(x)
 		else:
-			x = int(tft.width()/2)
+			x = int(self._tft.width()/2)
 		self._x = x-int(self._w/2)
 
 	def right(self,x=None):
 		if x:
 			x = int(x)
 		else:
-			x = tft.width()
+			x = self._tft.width()
 		self._x = x-self._w
 
 	def top(self,y=None):
@@ -206,14 +213,14 @@ class Control:
 		if y:
 			y = int(y)
 		else:
-			y = int(tft.height()/2)
+			y = int(self._tft.height()/2)
 		self._y = y-int(self._h/2)
 
 	def bottom(self,y=None):
 		if y:
 			y = int(y)
 		else:
-			y = tft.height()
+			y = self._tft.height()
 		self._y = y-self._h
 
 	def listArgs(self,*args):
@@ -227,10 +234,10 @@ class Control:
 
 	def tapped(self,touchPoint):
 		tp = touchPoint
-		nw = self._w * 1024 / tft.width()	# normalized width
-		nh = self._h * 1024 / tft.height()	# normalized height
-		nx = self._x * 1024 / tft.width()	# normalized x position
-		ny = self._y * 1024 / tft.height()	# normalized y position
+		nw = self._w * 1024 / self._tft.width()	# normalized width
+		nh = self._h * 1024 / self._tft.height()	# normalized height
+		nx = self._x * 1024 / self._tft.width()	# normalized x position
+		ny = self._y * 1024 / self._tft.height()	# normalized y position
 		if nx <= tp['x'] <= (nx+nw):
 			if ny <= tp['y'] <= (ny+nh):
 				# print self.listArgs(*self._onTapArgs)
@@ -242,17 +249,17 @@ class Control:
 			return False
 
 	def render(self):
-		tft.graphicsMode()
-		tft.fillRect(self._x,self._y,self._w,self._h,self.bg_color())
+		self._tft.graphicsMode()
+		self._tft.fillRect(self._x,self._y,self._w,self._h,self.bg_color())
 		for b in range(self._border):
-			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
-		tft.textMode()
-		tft.textColor(self.fg_color(),self.bg_color())
+			self._tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
+		self._tft.textMode()
+		self._tft.textColor(self.fg_color(),self.bg_color())
 		# setting for center/middle of rect
-		tft.textSetCursor(self._x+int(self._w/2)-int(self.text_width()/2),self._y+int(self._h/2)-int(self.text_height()/2))
-		tft.textEnlarge(self._size)
-		tft.textWrite(self._text,0)
-		tft.graphicsMode()
+		self._tft.textSetCursor(self._x+int(self._w/2)-int(self.text_width()/2),self._y+int(self._h/2)-int(self.text_height()/2))
+		self._tft.textEnlarge(self._size)
+		self._tft.textWrite(self._text,0)
+		self._tft.graphicsMode()
 		self._onRender(*self.listArgs(*self._onRenderArgs))
 		
 # do I need multi-line labels?
@@ -427,17 +434,17 @@ class Input(Control):
 			bg_color = self.bg_color()
 		else:
 			bg_color = RA8875_BLACK		# probably will need a more clear disabled style i.e. gray, italic, strikethrough, etc
-		tft.graphicsMode()
-		tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
+		self._tft.graphicsMode()
+		self._tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
 		for b in range(self._border):
-			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
-		tft.textMode()
-		tft.textColor(self.fg_color(),bg_color)
+			self._tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
+		self._tft.textMode()
+		self._tft.textColor(self.fg_color(),bg_color)
 		# setting for center/middle of rect
-		tft.textSetCursor(self._x+int(self._w/2)-int(self.value_width()/2),self._y+int(self._h/2)-int(self.value_height()/2))
-		tft.textEnlarge(self._size)
-		tft.textWrite(str(self._value),0)
-		tft.graphicsMode()
+		self._tft.textSetCursor(self._x+int(self._w/2)-int(self.value_width()/2),self._y+int(self._h/2)-int(self.value_height()/2))
+		self._tft.textEnlarge(self._size)
+		self._tft.textWrite(str(self._value),0)
+		self._tft.graphicsMode()
 		self._onRender(*self.listArgs(*self._onRenderArgs))
 
 class Button(Input):
@@ -449,17 +456,17 @@ class Button(Input):
 			bg_color = self.bg_color()
 		else:
 			bg_color = RA8875_BLACK		# probably will need a more clear disabled style i.e. gray, italic, strikethrough, etc
-		tft.graphicsMode()
-		tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
+		self._tft.graphicsMode()
+		self._tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
 		for b in range(self._border):
-			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
-		tft.textMode()
-		tft.textColor(self.fg_color(),bg_color)
+			self._tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
+		self._tft.textMode()
+		self._tft.textColor(self.fg_color(),bg_color)
 		# setting for center/middle of rect
-		tft.textSetCursor(self._x+int(self._w/2)-int(self.value_width()/2),self._y+int(self._h/2)-int(self.value_height()/2))
-		tft.textEnlarge(self._size)
-		tft.textWrite(str(self._text),0)
-		tft.graphicsMode()
+		self._tft.textSetCursor(self._x+int(self._w/2)-int(self.value_width()/2),self._y+int(self._h/2)-int(self.value_height()/2))
+		self._tft.textEnlarge(self._size)
+		self._tft.textWrite(str(self._text),0)
+		self._tft.graphicsMode()
 		self._onRender(*self.listArgs(*self._onRenderArgs))
 
 class Toggle(Button):
@@ -638,9 +645,9 @@ class Spinbox(Input):
 			bg_color = self._bg_color
 		else:
 			bg_color = RA8875_BLACK
-		tft.graphicsMode()
-		tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
-		tft.drawRect(self._x,self._y,self._w,self._h,self._fg_color)
+		self._tft.graphicsMode()
+		self._tft.fillRect(self._x,self._y,self._w,self._h,bg_color)
+		self._tft.drawRect(self._x,self._y,self._w,self._h,self._fg_color)
 		self._label.render()
 		self._input.render()
 		self._upBtn.render()
@@ -719,14 +726,14 @@ class Image(Control):
 		return self._src
 
 	def render(self):
-		tft.graphicsMode()
-		tft.fillRect(self._x,self._y,self._w,self._h,self.bg_color())
+		self._tft.graphicsMode()
+		self._tft.fillRect(self._x,self._y,self._w,self._h,self.bg_color())
 		for b in range(self._border):
-			tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
+			self._tft.drawRect(self._x+b,self._y+b,self._w-(2*b),self._h-(2*b),self.fg_color())
 		# for r in range(self._h):
 		# 	line = []
-		# 	tft.setXY(self._x,self._y+r)
-		# 	tft.writeCommand(RA8875_MRWC)
+		# 	self._tft.setXY(self._x,self._y+r)
+		# 	self._tft.writeCommand(RA8875_MRWC)
 		# 	for c in range(self._w):
 		# 		px = self._src[(r*self._w)+c]
 		# 		if px == 0xFFFF:
@@ -734,24 +741,24 @@ class Image(Control):
 		# 		line.append((px >> 8))
 		# 		line.append(px)
 
-		# 	GPIO.output(tft._cs, GPIO.LOW)
-		# 	tft.spi.xfer2([RA8875_DATAWRITE]+line)
-		# 	GPIO.output(tft._cs, GPIO.HIGH)
+		# 	GPIO.output(self._tft._cs, GPIO.LOW)
+		# 	self._tft.spi.xfer2([RA8875_DATAWRITE]+line)
+		# 	GPIO.output(self._tft._cs, GPIO.HIGH)
 
 		# Set active window X 
-		tft.writeReg(RA8875_HSAW0, (self._x & 0xFF))                                        # horizontal start point
-		tft.writeReg(RA8875_HSAW1, (self._x >> 8))
-		tft.writeReg(RA8875_HEAW0, (self._x+self._w - 1) & 0xFF)            # horizontal end point
-		tft.writeReg(RA8875_HEAW1, (self._x+self._w - 1) >> 8)
+		self._tft.writeReg(RA8875_HSAW0, (self._x & 0xFF))                                        # horizontal start point
+		self._tft.writeReg(RA8875_HSAW1, (self._x >> 8))
+		self._tft.writeReg(RA8875_HEAW0, (self._x+self._w - 1) & 0xFF)            # horizontal end point
+		self._tft.writeReg(RA8875_HEAW1, (self._x+self._w - 1) >> 8)
 
 		# Set active window Y 
-		tft.writeReg(RA8875_VSAW0, (self._y & 0xFF))                                        # vertical start point
-		tft.writeReg(RA8875_VSAW1, (self._y >> 8))  
-		tft.writeReg(RA8875_VEAW0, (self._y+self._h - 1) & 0xFF)           # horizontal end point
-		tft.writeReg(RA8875_VEAW1, (self._y+self._h - 1) >> 8)
+		self._tft.writeReg(RA8875_VSAW0, (self._y & 0xFF))                                        # vertical start point
+		self._tft.writeReg(RA8875_VSAW1, (self._y >> 8))  
+		self._tft.writeReg(RA8875_VEAW0, (self._y+self._h - 1) & 0xFF)           # horizontal end point
+		self._tft.writeReg(RA8875_VEAW1, (self._y+self._h - 1) >> 8)
 
-		tft.setXY(self._x,self._y)
-		tft.writeCommand(RA8875_MRWC)
+		self._tft.setXY(self._x,self._y)
+		self._tft.writeCommand(RA8875_MRWC)
 
 		mem = []
 		for px in self._src:
@@ -761,21 +768,21 @@ class Image(Control):
 			mem.append(px)
 
 		for i in xrange(0,len(mem),4095):
-			GPIO.output(tft._cs, GPIO.LOW)
-			tft.spi.xfer2([RA8875_DATAWRITE]+mem[i:i+4095])
-			GPIO.output(tft._cs, GPIO.HIGH)
+			GPIO.output(self._tft._cs, GPIO.LOW)
+			self._tft.spi.xfer2([RA8875_DATAWRITE]+mem[i:i+4095])
+			GPIO.output(self._tft._cs, GPIO.HIGH)
 
 		# Set active window X 
-		tft.writeReg(RA8875_HSAW0, 0)                                        # horizontal start point
-		tft.writeReg(RA8875_HSAW1, 0)
-		tft.writeReg(RA8875_HEAW0, (tft.width() - 1) & 0xFF)            # horizontal end point
-		tft.writeReg(RA8875_HEAW1, (tft.width() - 1) >> 8)
+		self._tft.writeReg(RA8875_HSAW0, 0)                                        # horizontal start point
+		self._tft.writeReg(RA8875_HSAW1, 0)
+		self._tft.writeReg(RA8875_HEAW0, (self._tft.width() - 1) & 0xFF)            # horizontal end point
+		self._tft.writeReg(RA8875_HEAW1, (self._tft.width() - 1) >> 8)
 
 		# Set active window Y 
-		tft.writeReg(RA8875_VSAW0, 0)                                        # vertical start point
-		tft.writeReg(RA8875_VSAW1, 0)  
-		tft.writeReg(RA8875_VEAW0, (tft.height() - 1) & 0xFF)           # horizontal end point
-		tft.writeReg(RA8875_VEAW1, (tft.height() - 1) >> 8)
+		self._tft.writeReg(RA8875_VSAW0, 0)                                        # vertical start point
+		self._tft.writeReg(RA8875_VSAW1, 0)  
+		self._tft.writeReg(RA8875_VEAW0, (self._tft.height() - 1) & 0xFF)           # horizontal end point
+		self._tft.writeReg(RA8875_VEAW1, (self._tft.height() - 1) >> 8)
 
 		self._onRender(*self.listArgs(*self._onRenderArgs))
 
@@ -784,6 +791,14 @@ class Screen:
 	def __init__(self,**kwargs):
 		self._id = kwargs['id']
 		self._active = False
+		self._parent = kwargs['parent']
+
+		self._parent.addScreen(self)
+
+		tftSearch = self._parent
+		while '_tft' not in vars(tftSearch):
+			tftSearch = tftSearch._parent
+		self._tft = tftSearch._tft
 
 		if 'fg_color' in kwargs:
 			self._fg_color = kwargs['fg_color']
@@ -826,40 +841,36 @@ class Screen:
 		return self._controls
 
 	def active(self,x=None):
-		global status
-		global screens
+		# global status
+		# global screens
 		if x:
-			status['screen'] = self._id
-			for s in screens:
+			self._parent.status()['screen'] = self._id
+			for s in self._parent.screens():
 				s.active(False)
-			tft.graphicsMode()
-			tft.fillScreen(self._bg_color)
+			self._tft.graphicsMode()
+			self._tft.fillScreen(self._bg_color)
 
 			for c in self._controls:
 				c.render()
-			tft.graphicsMode()
+			self._tft.graphicsMode()
 			self._active = True
 		else:
 			self._active = False
 
-class Clock(Input):
-	def __init__(self,**kwargs):
-		Input.__init__(self,**kwargs)
-		self._nextUpdate=datetime.datetime.now()
-
-	def update(self):
-		dt = datetime.datetime.now()
-		if dt >= self._nextUpdate:
-			self.change(datetime.datetime.now().strftime("%B %d, %Y %H:%M:%S%z"))
-			self._nextUpdate = dt+datetime.timedelta(seconds=1)
-
 class TouchDisplay:
 	def __init__(self,**kwargs):
-		self._screen = -1
+		# self._screen = -1
 		self._screens = []
 		self._intPin = kwargs['intPin']
 		self._tft = kwargs['tft']
+		self._status = {}
 
+
+	def status(self):
+		return self._status
+
+	def screens(self):
+		return self._screens
 
 	def addScreen(self,s):
 		self._screens.append(s)
@@ -873,12 +884,12 @@ class TouchDisplay:
 	def handleInterrupt(self):
 		while self._tft.touched():
 			tr = self._tft.touchRead()
-		s = self.getScreen(self._screen)
+		s = self.getScreen(self._status['screen'])
 		for c in s.controls():
 			c.tapped(tr)
 
 	def handleUpdate(self):
-		s = self.getScreen(self._screen)
+		s = self.getScreen(self._status['screen'])
 		for c in s.controls():
 			try:
 				c.update()
