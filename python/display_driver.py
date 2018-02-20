@@ -6,6 +6,7 @@ import CHIP_IO.GPIO as GPIO
 import CHIP_IO.OverlayManager as OM
 import enum
 from img import *
+import datetime
 
 def debug(obj):
 	for k in vars(obj).keys():
@@ -859,6 +860,17 @@ class Screen:
 		else:
 			self._active = False
 
+class clock(Input):
+	def __init__(self,**kwargs):
+		Input.__init__(self,**kwargs)
+		self._nextUpdate=datetime.datetime.now()
+
+	def update(self):
+		dt = datetime.datetime.now()
+		if dt >= self._nextUpdate:
+			self.change(datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
+			self._nextUpdate = dt+datetime.timedelta(seconds=1)
+
 # app components?
 status = {
 	'screen': -1,
@@ -875,7 +887,6 @@ def getScreen(id):
 	return False
 
 def handleInterrupt(channel):
-	# print 'handleInterrupt(' + channel + ')'
 	global status
 	while tft.touched():
 		status['touchPoint'] = tft.touchRead()
@@ -884,6 +895,15 @@ def handleInterrupt(channel):
 		if c.tapped(status['touchPoint']):
 			status['message'] = c.text() + ' tapped'
 			# print status['message']
+
+def handleUpdate():
+	global status
+	s = getScreen(status['screen'])
+	for c in s.controls():
+		try:
+			c.update()
+		except AttributeError:
+			pass
 
 tft = Adafruit_RA8875(RA8875_CS, RA8875_RESET)
 
@@ -971,6 +991,15 @@ instruction_lbl = Label(
 
 instruction_lbl.left(10)
 instruction_lbl.top(50)
+
+clk = Clock(
+		parent=main_screen,
+		datatype=t_datatype.text,
+		size=2
+		)
+
+clk.center()
+clk.middle()
 
 # main_screen.controls([btn,welcome_lbl,instruction_lbl])
 
@@ -1388,8 +1417,6 @@ img2 = Image(
 img2.right(750)
 img2.middle()
 
-# debug(img)
-
 ####################################################
 
 ####################################################
@@ -1407,6 +1434,7 @@ while True:
 	try:
 		if GPIO.input(RA8875_INT)==0:
 			handleInterrupt(RA8875_INT)
+		handleUpdate()
 
 	except KeyboardInterrupt:
 		tft.displayOn(False)
