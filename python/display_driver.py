@@ -860,7 +860,7 @@ class Screen:
 		else:
 			self._active = False
 
-class clock(Input):
+class Clock(Input):
 	def __init__(self,**kwargs):
 		Input.__init__(self,**kwargs)
 		self._nextUpdate=datetime.datetime.now()
@@ -868,7 +868,7 @@ class clock(Input):
 	def update(self):
 		dt = datetime.datetime.now()
 		if dt >= self._nextUpdate:
-			self.change(datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p"))
+			self.change(datetime.datetime.now().strftime("%B %d, %Y %H:%M:%S%z"))
 			self._nextUpdate = dt+datetime.timedelta(seconds=1)
 
 # app components?
@@ -995,7 +995,9 @@ instruction_lbl.top(50)
 clk = Clock(
 		parent=main_screen,
 		datatype=t_datatype.text,
-		size=2
+		size=2,
+		value='THIS IS JUST A PLACEHOLDER',
+		border=0
 		)
 
 clk.center()
